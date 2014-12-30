@@ -1,16 +1,8 @@
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "brink", "brink.vcxproj", "{7ECF51DB-75B9-461A-B8B4-B99B1E77A3D5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30} = {3E283F37-A4ED-41B7-A3E6-A2D89D131A30}
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F} = {55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rd", "3rd", "{A66644D7-05E0-4DA4-9058-9110DA4C4B08}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libprotobuf", "3rd\protobuf-2.6.0\vsprojects\libprotobuf.vcxproj", "{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtcmalloc_minimal", "3rd\gperftools-2.1\vsprojects\libtcmalloc_minimal\libtcmalloc_minimal.vcxproj", "{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,20 +14,8 @@ Global
 		{7ECF51DB-75B9-461A-B8B4-B99B1E77A3D5}.Debug|Win32.Build.0 = Debug|Win32
 		{7ECF51DB-75B9-461A-B8B4-B99B1E77A3D5}.Release|Win32.ActiveCfg = Release|Win32
 		{7ECF51DB-75B9-461A-B8B4-B99B1E77A3D5}.Release|Win32.Build.0 = Release|Win32
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.ActiveCfg = Debug|Win32
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.Build.0 = Debug|Win32
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Release|Win32.ActiveCfg = Release|Win32
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Release|Win32.Build.0 = Release|Win32
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}.Debug|Win32.Build.0 = Debug|Win32
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}.Release|Win32.ActiveCfg = Release|Win32
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30} = {A66644D7-05E0-4DA4-9058-9110DA4C4B08}
-		{55E2B3AE-3CA1-4DB6-97F7-0A044D6F446F} = {A66644D7-05E0-4DA4-9058-9110DA4C4B08}
 	EndGlobalSection
 EndGlobal

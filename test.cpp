@@ -4,16 +4,8 @@
 #include <future>
 
 #include "./tcp/tcp_server.h"
-//#include "./udp/udp_server.h"
-//#include "./tcp/protobuf/protobuf_server.h"
-
-#ifdef USE_TCMALLOC
-#pragma comment (lib,"libtcmalloc_minimal.lib")
-#pragma comment (linker,"/INCLUDE:__tcmalloc")
-#endif
 
 BrinK::tcp::server                   tcp_server__(4, 500);
-//BrinK::tcp::protobuf_server          pbuf_server__(10, 500);
 
 volatile std::atomic_bool            exit__;
 
