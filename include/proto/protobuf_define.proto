@@ -1,0 +1,16 @@
+//数据体定义
+
+//固定大小的数据包头
+message pbuf_head {
+  required fixed32 length = 1;	//包体长度（必选）
+  required fixed32 type = 2;	//包类型（必选）
+}
+
+//包体
+message pbuf_body {
+  required uint32 length = 1;	//大小（必选）
+  optional uint32 type = 2;		//类型（可选）
+  optional uint32 reserve = 3;	//保留值（可选）
+  optional string str = 4;		//字符串（可选）
+  optional bytes  binary = 5;	//二进制（可选）
+}

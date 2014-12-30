@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="include\proto\pbuf.cc">
+      <Filter>include\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="udp\udp_socket.cpp">
+      <Filter>udp</Filter>
+    </ClCompile>
+    <ClCompile Include="udp\udp_server.cpp">
+      <Filter>udp</Filter>
+    </ClCompile>
+    <ClCompile Include="tcp\tcp_socket.cpp">
+      <Filter>tcp</Filter>
+    </ClCompile>
+    <ClCompile Include="tcp\tcp_server.cpp">
+      <Filter>tcp</Filter>
+    </ClCompile>
+    <ClCompile Include="tcp\protobuf\protobuf_server.cpp">
+      <Filter>tcp\protobuf</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{ba344768-56c9-48c6-9e9e-f0502f9367e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\proto">
+      <UniqueIdentifier>{9bfc2fc2-acbc-4137-b8ea-f776d8a82a65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tcp">
+      <UniqueIdentifier>{35e3eb5e-a1cc-4555-900b-b62b8d43bf3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="udp">
+      <UniqueIdentifier>{1dcc6024-dfa8-4ced-b5b7-8d8f98da90bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\pool">
+      <UniqueIdentifier>{0e219b59-41f8-4c6e-8432-2f84e3aab066}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tcp\protobuf">
+      <UniqueIdentifier>{99df8159-9a82-43e0-836c-2e8f1b2a00c2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\proto\pbuf.h">
+      <Filter>include\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="include\brink_defines.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\brink_utils.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pool\shared.hpp">
+      <Filter>include\pool</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pool\pool.hpp">
+      <Filter>include\pool</Filter>
+    </ClInclude>
+    <ClInclude Include="udp\udp_socket.h">
+      <Filter>udp</Filter>
+    </ClInclude>
+    <ClInclude Include="udp\udp_server.h">
+      <Filter>udp</Filter>
+    </ClInclude>
+    <ClInclude Include="tcp\tcp_socket.h">
+      <Filter>tcp</Filter>
+    </ClInclude>
+    <ClInclude Include="tcp\tcp_server.h">
+      <Filter>tcp</Filter>
+    </ClInclude>
+    <ClInclude Include="tcp\protobuf\protobuf_server.h">
+      <Filter>tcp\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pool\thread.hpp">
+      <Filter>include\pool</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\proto\protobuf_define.proto">
+      <Filter>include\proto</Filter>
+    </None>
+  </ItemGroup>
+</Project>
