@@ -54,15 +54,23 @@ BrinK设计理念是分层级的，最下层是raw_tcp/udp，只处理最基本�
 你可以从该项目中学习到的技术点至少有：
 
 1：线程池/对象池原理和机制、资源回收等
+
 2：较良好的C++命名规范和编码规范
+
 3：一些第三方库使用
+
 4：lambda一些技巧和一些C++11使用上的经验
+
 5：同步/异步/资源竞争/调度问题
+
 6：回调函数
+
 7：网络协议相关知识
+
 8：框架方面的知识
 
-![image](https://github.com/invxp/brink/Diagram.png)
+
+![image](https://github.com/invxp/brink/blob/master/Diagram.png)
 
 非常欢迎任何对此“项目”感兴趣的人投入参与进来，如果你对它感兴趣，那么就加入吧！
 
