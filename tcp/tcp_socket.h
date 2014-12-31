@@ -66,13 +66,8 @@ namespace BrinK
 
         public:
             void async_read(const size_t& expect_size, const client_handler_t& recv_handler);
-
             void async_write(const std::string& buff, const client_handler_t& write_handler);
-
             void async_timeout(const unsigned __int64& milliseconds, const client_handler_t& timeout_handler);
-
-        private:
-            void close_();
 
         private:
             void handle_read(const boost::system::error_code& error,
