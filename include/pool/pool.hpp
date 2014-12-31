@@ -9,8 +9,7 @@ p.free(o,[](obj&){...});
 p.each...
 */
 
-#ifndef BRINK_POOL_POOL_H
-#define BRINK_POOL_POOL_H
+#pragma once
 
 #include <mutex>
 #include <list>
@@ -101,5 +100,3 @@ namespace BrinK
     }
 
 }
-
-#endif

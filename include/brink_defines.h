@@ -1,10 +1,10 @@
-#ifndef BRINK_DEFINES_H
-#define BRINK_DEFINES_H
+#pragma once
 
 #include <thread>
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/any.hpp>
+#include <iostream>
 
 typedef std::shared_ptr < boost::asio::io_service >                  io_service_sptr_t;
 typedef std::shared_ptr < boost::asio::io_service::work >            work_sptr_t;
@@ -30,5 +30,3 @@ typedef std::function < void(const boost::any& any,
     const size_t& bytes_transferred,
     const std::string& buff) >
     client_handler_t;
-
-#endif

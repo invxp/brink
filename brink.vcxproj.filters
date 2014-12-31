@@ -36,8 +36,5 @@
     <ClInclude Include="tcp\tcp_server.h">
       <Filter>tcp</Filter>
     </ClInclude>
-    <ClInclude Include="include\pool\thread.hpp">
-      <Filter>include\pool</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

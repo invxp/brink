@@ -1,5 +1,4 @@
-#ifndef BRINK_UTILS_H
-#define BRINK_UTILS_H
+#pragma once
 
 #include <brink_defines.h>
 #include <sstream>
@@ -12,9 +11,7 @@ namespace BrinK
         {
             std::istream is(sb.get());
             is.unsetf(std::ios_base::skipws);
-            std::string s;
-            s.append(std::istream_iterator < char > (is), std::istream_iterator < char > ());
-            return s;
+            return std::string(std::istream_iterator < char >(is), std::istream_iterator < char >());
         }
 
         template <class T>
@@ -36,5 +33,3 @@ namespace BrinK
     }
 
 }
-
-#endif

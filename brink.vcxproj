@@ -19,7 +19,6 @@
     <ClInclude Include="include\brink_defines.h" />
     <ClInclude Include="include\brink_utils.h" />
     <ClInclude Include="include\pool\pool.hpp" />
-    <ClInclude Include="include\pool\thread.hpp" />
     <ClInclude Include="tcp\tcp_socket.h" />
     <ClInclude Include="tcp\tcp_server.h" />
   </ItemGroup>

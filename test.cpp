@@ -5,7 +5,7 @@
 
 #include "./tcp/tcp_server.h"
 
-BrinK::tcp::server                   tcp_server__(4, 500);
+BrinK::tcp::server                   tcp_server__;
 
 volatile std::atomic_bool            exit__;
 

@@ -1,5 +1,4 @@
-#ifndef BRINK_TCP_SOCKET_H
-#define BRINK_TCP_SOCKET_H
+#pragma once
 
 #include <brink_defines.h>
 #include <brink_utils.h>
@@ -50,30 +49,32 @@ namespace BrinK
         class socket : public std::enable_shared_from_this < BrinK::tcp::socket >
         {
         public:
-            socket();
+            socket(boost::asio::io_service& io);
             virtual ~socket();
 
         public:
             boost::asio::ip::tcp::socket& raw_socket();
 
         public:
-            void get_param(const std::function < void(param_sptr_t p) >& handler); // 所有用户自定义的结构可以扩展该结构体param
+            // 用户自定义的结构
+            void get_param(const std::function < void(param_sptr_t p) >& handler); 
 
         public:
-            void reset(boost::asio::io_service& io_service);
-            void free();
-            void closesocket();
             void accept();
+            void free();
+            void reset();
 
         public:
-            void async_read(const size_t& expect_size,
-                const client_handler_t& recv_handler,
-                const unsigned __int64& time_out_milliseconds,
-                const client_handler_t& timeout_handler);
+            void async_read(const size_t& expect_size, const client_handler_t& recv_handler);
 
             void async_write(const std::string& buff, const client_handler_t& write_handler);
 
-        protected:
+            void async_timeout(const unsigned __int64& milliseconds, const client_handler_t& timeout_handler);
+
+        private:
+            void close_();
+
+        private:
             void handle_read(const boost::system::error_code& error,
                 size_t bytes_transferred,
                 const client_handler_t& handler,
@@ -95,9 +96,6 @@ namespace BrinK
                 const client_handler_t& handler);
 
         private:
-            void set_timeout(const unsigned __int64& milliseconds, const client_handler_t& handler);
-
-        private:
             tcp_socket_sptr_t                           socket_;
             timer_sptr_t                                timer_;
             strand_sptr_t                               strand_;
@@ -106,10 +104,10 @@ namespace BrinK
             std::list< streambuf_sptr_t >               send_buff_list_;    // 发送需要一个队列
             std::mutex                                  send_buff_mutex_;
 
-            volatile std::atomic_size_t                 timeout_count_;
+            std::atomic_size_t                          timeout_count_;
 
-            volatile std::atomic_bool                   avalible_;
-            std::mutex                                  mutex_;
+            std::atomic_bool                            avalible_;
+            std::mutex                                  avalible_mutex_;
 
             param_sptr_t                                param_;
             std::mutex                                  param_mutex_;
@@ -119,6 +117,3 @@ namespace BrinK
     }
 
 }
-
-
-#endif
