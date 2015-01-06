@@ -205,11 +205,7 @@ void BrinK::tcp::socket::handle_timeout(const boost::system::error_code& error,
     const unsigned __int64& time_out_milliseconds,
     const client_handler_t& timeout_handler)
 {
-    if (error)
-        return;
-
-    std::unique_lock < std::mutex > lock(avalible_mutex_);
-    if (!avalible_)
+    if ((error) || (!avalible_))
         return;
 
     if (timer->expires_at() <= boost::asio::deadline_timer::traits_type::now())

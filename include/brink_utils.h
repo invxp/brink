@@ -2,6 +2,7 @@
 
 #include <brink_defines.h>
 #include <sstream>
+#include <random>
 
 namespace BrinK
 {
@@ -29,6 +30,18 @@ namespace BrinK
             std::stringstream ss(s);
             ss >> t;
             return t;
+        }
+
+        inline void sleep(const unsigned __int64& milliseconds)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+        }
+
+        inline unsigned int random(const unsigned int& left, const unsigned int& right)
+        {
+            std::mt19937 rng((unsigned int)std::time(nullptr));
+            std::uniform_int_distribution<unsigned int> num(left, right);
+            return num(rng);
         }
     }
 

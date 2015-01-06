@@ -41,8 +41,13 @@ namespace BrinK
 
         public:
             void broadcast(const std::string& msg);
-            void async_read(tcp_client_sptr_t client, const unsigned int& expect_size, const unsigned __int64& timeout_millseconds);
-            void async_write(tcp_client_sptr_t client, const std::string& data);
+
+            void async_read(tcp_client_sptr_t client,
+                const unsigned int& expect_size,
+                const unsigned __int64& timeout_millseconds);
+
+            void async_write(tcp_client_sptr_t client,
+                const std::string& data);
 
         public:
             unsigned int get_port() const;
@@ -56,7 +61,8 @@ namespace BrinK
             inline boost::asio::io_service&    get_io_service();
 
         private:
-            void handle_accept(tcp_client_sptr_t client, const boost::system::error_code& error);
+            void handle_accept(tcp_client_sptr_t client,
+                const boost::system::error_code& error);
 
             void handle_timeout(const boost::any& client,
                 const boost::system::error_code& error,
@@ -77,7 +83,7 @@ namespace BrinK
                 const boost::system::error_code& error,
                 const size_t& bytes_transferred,
                 const std::string& buff);
-        
+
         private:
             complete_handler_t                                          recv_handler_;
             complete_handler_t                                          send_handler_;
@@ -98,9 +104,8 @@ namespace BrinK
             thread_sptr_t                                               acceptor_thread_;
 
             std::atomic_bool                                            shut_down_;
-            std::mutex                                                  mutex_;
+            std::recursive_mutex                                        shut_down_mutex_;
 
-            std::atomic_bool                                            started_;
             unsigned int                                                port_;
         };
 

@@ -20,7 +20,7 @@ accept_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::s
 {
     // 握手：client初始化，通过c->get_param可以得到他的unique_id，规则："ip地址:端口"，e、s通常不需要关心
     // 默认读4个字节
-    async_read(c, 4, 2000);
+    async_read(c, 4, 10000);
 }),
 timeout_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
 {
@@ -40,8 +40,6 @@ error_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::sy
 })
 {
     shut_down_ = false;
-
-    started_ = false;
 
     for (size_t i = 0; i < std::thread::hardware_concurrency(); i++)
         io_services_.emplace_back(std::make_shared < boost::asio::io_service >());
@@ -65,9 +63,9 @@ void BrinK::tcp::server::start(const unsigned int& port,
     const complete_handler_t& error_handler,
     const complete_handler_t& timeout_handler)
 {
-    std::unique_lock < std::mutex > lock(mutex_);
+    std::unique_lock < std::recursive_mutex > lock(shut_down_mutex_);
 
-    if (started_)
+    if (shut_down_)
         return;
 
     if (recv_complete)
@@ -87,11 +85,7 @@ void BrinK::tcp::server::start(const unsigned int& port,
 
     port_ = port;
 
-    shut_down_ = false;
-
     start_();
-
-    started_ = true;
 }
 
 void BrinK::tcp::server::start_()
@@ -115,16 +109,16 @@ void BrinK::tcp::server::start_()
 
 void BrinK::tcp::server::stop()
 {
-    std::unique_lock < std::mutex > lock(mutex_);
+    std::unique_lock < std::recursive_mutex > lock(shut_down_mutex_);
 
-    if (!started_)
+    if (shut_down_)
         return;
 
     shut_down_ = true;
 
     stop_();
 
-    started_ = false;
+    shut_down_ = false;
 }
 
 void BrinK::tcp::server::stop_()
@@ -133,7 +127,7 @@ void BrinK::tcp::server::stop_()
 
     // 取消监听端口，与io_service解开绑定，这里，未握手的socket会进入一次995
     acceptor_work_.reset();
-    acceptor_->close(ec);
+    acceptor_->cancel(ec);
     acceptor_thread_->join();
     acceptor_io_service_->reset();
     acceptor_.reset();
@@ -155,9 +149,9 @@ void BrinK::tcp::server::stop_()
 
 void BrinK::tcp::server::broadcast(const std::string& msg)
 {
-    std::unique_lock < std::mutex > lock(mutex_);
+    std::unique_lock < std::recursive_mutex > lock(shut_down_mutex_);
 
-    if ((shut_down_) || (!started_))
+    if (shut_down_)
         return;
 
     clients_pool_->each([this, msg](tcp_client_sptr_t& client)
@@ -174,7 +168,9 @@ void BrinK::tcp::server::broadcast(const std::string& msg)
     );
 }
 
-void BrinK::tcp::server::async_read(tcp_client_sptr_t client, const unsigned int& expect_size, const unsigned __int64& timeout_millseconds)
+void BrinK::tcp::server::async_read(tcp_client_sptr_t client,
+    const unsigned int& expect_size,
+    const unsigned __int64& timeout_millseconds)
 {
     client->async_read(expect_size,
         std::bind(&server::handle_read,
@@ -213,6 +209,8 @@ unsigned int BrinK::tcp::server::get_port() const
 
 void BrinK::tcp::server::accept_clients_()
 {
+    std::unique_lock < std::recursive_mutex > lock(shut_down_mutex_);
+
     if (shut_down_)
         return;
 
@@ -230,9 +228,14 @@ void BrinK::tcp::server::accept_clients_()
 
 void BrinK::tcp::server::handle_accept(tcp_client_sptr_t client, const boost::system::error_code& error)
 {
-    // socket未握手之前，需单独处理，之后所有错误都在recv处理
+    // socket未握手之前，需单独处理，之后所有错误都在recv，这里如果出错，说明发生了比较严重的异常
     if (error)
+    { 
         handle_error(client, error, 0, "");
+        // 一般情况下995错误为stop引起，这时候退出，绝不可以accept_client
+        if (error == boost::asio::error::operation_aborted)
+            return;
+    }
     else
     {
         client->accept();
