@@ -22,104 +22,80 @@ namespace BrinK
         public:
             thread()
             {
-                stop_flag_ = true;
-                can_start_ = true;
+                stop_ = false;
             }
             virtual ~thread()
             {
                 stop();
-                cancel();
+                clear();
             }
 
         public:
             void post(const task_t& f)
             {
                 std::unique_lock < std::mutex > lock(tasks_mutex_);
-                tasks_.push_back(f);
-                awake_thread_();
+                tasks_.emplace_back(f);
+                awake_condition(lock, tasks_condition_);
             }
 
             void dispatch(const task_t& f)
             {
                 std::unique_lock < std::mutex > lock(tasks_mutex_);
-                tasks_.push_front(f);
-                awake_thread_();
+                tasks_.emplace_front(f);
+                awake_condition(lock, tasks_condition_);
             }
 
             bool wait()
             {
-                if (stopped_())
-                    return false;
-
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
-                std::unique_lock < std::mutex > lock_wait(wait_all_mutex_);
-                awake_thread_(true);
-                lock_task.unlock();
-                wait_all_condition_.wait(lock_wait);
-
-                return true;
+               return wait_(wait_all_mutex_, wait_all_condition_);
             }
 
             bool wait_one()
             {
-                if (stopped_())
-                    return false;
-
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
-                std::unique_lock < std::mutex > lock_wait(wait_one_mutex_);
-                awake_thread_(true);
-                lock_task.unlock();
-                wait_one_condition_.wait(lock_wait);
-
-                return true;
-            }
-
-            void stop()
-            {
-                std::unique_lock < std::mutex > lock_start(can_start_mutex_);
-                std::unique_lock < std::mutex > lock_stop(stop_mutex_);
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
-                std::unique_lock < std::mutex > lock_all(wait_all_mutex_);
-                std::unique_lock < std::mutex > lock_one(wait_one_mutex_);
-
-                if (stop_flag_)
-                    return;
-
-                stop_flag_ = true;
-
-                awake_thread_(true);
-                wait_all_condition_.notify_all();
-                wait_one_condition_.notify_all();
-
-                lock_task.unlock();
-                lock_all.unlock();
-                lock_one.unlock();
-                lock_stop.unlock();
-
-                std::for_each(threads_.begin(), threads_.end(), [this](thread_ptr_t& thread){ thread->join(); });
-                threads_.clear();
-                can_start_ = true;
+                return wait_(wait_one_mutex_, wait_one_condition_);
             }
 
             bool start(const unsigned int& pool_size = std::thread::hardware_concurrency())
             {
-                std::unique_lock < std::mutex > lock_start(can_start_mutex_);
+                std::unique_lock < std::mutex > lock(mutex_);
 
-                if (!can_start_)
+                if (stop_)
                     return false;
 
-                can_start_ = false;
-
-                std::unique_lock < std::mutex > lock_stop(stop_mutex_);
-
-                stop_flag_ = false;
-
-                run_(pool_size);
+                create_threads_(pool_size);
 
                 return true;
             }
 
-            void cancel()
+            bool stop()
+            {
+                std::unique_lock < std::mutex > lock(mutex_);
+
+                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+
+                if (stop_)
+                    return false;
+
+                stop_ = true;
+
+                awake_condition(lock_task, tasks_condition_);
+
+                remove_threads_();
+
+                std::unique_lock < std::mutex > lock_all(wait_all_mutex_);
+
+                std::unique_lock < std::mutex > lock_one(wait_one_mutex_);
+
+                awake_condition(lock_all, wait_all_condition_);
+
+                awake_condition(lock_one, wait_one_condition_);
+
+                stop_ = false;
+
+                return true;
+            }
+
+            void clear()
             {
                 std::unique_lock < std::mutex > lock(tasks_mutex_);
                 tasks_.clear();
@@ -133,52 +109,87 @@ namespace BrinK
         private:
             void pool_func_()
             {
-                do
+                task_t task;
+                while (get_task_(task))
                 {
-                    std::unique_lock < std::mutex > lock_stop(stop_mutex_);
-                    if (stop_flag_)
-                        break;
-
-                    std::unique_lock < std::mutex > lock_task(tasks_mutex_);
-                    std::unique_lock < std::mutex > lock_all(wait_all_mutex_);
-                    std::unique_lock < std::mutex > lock_one(wait_one_mutex_);
-
-                    if (tasks_.empty())
-                    {
-                        wait_all_condition_.notify_all();
-                        lock_all.unlock();
-                        wait_one_condition_.notify_all();
-                        lock_one.unlock();
-                        lock_stop.unlock();
-                        tasks_condition_.wait(lock_task);
-                        continue;
-                    }
-
-                    tasks_.front()();
-                    tasks_.pop_front();
-                    wait_one_condition_.notify_all();
-                    lock_one.unlock();
-
+                    task();
                     std::this_thread::yield();
-
-                } while (!stop_flag_);
+                }
             }
 
-            void awake_thread_(const bool& all = false)
+            bool get_task_(task_t& t)
             {
-                all ? tasks_condition_.notify_all() : tasks_condition_.notify_one();
+                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+
+                tasks_condition_.wait(lock_task, [this]
+                {
+                    if (this->stop_)
+                        return true;
+
+                    std::unique_lock < std::mutex > lock_all(this->wait_all_mutex_);
+                    std::unique_lock < std::mutex > lock_one(this->wait_one_mutex_);
+
+                    if (this->tasks_.empty())
+                    {
+                        this->awake_condition(lock_all, this->wait_all_condition_);
+                        this->awake_condition(lock_one, this->wait_one_condition_);
+                        return false;
+                    }
+                    return true;
+                });
+
+                if (stop_)
+                    return false;
+
+                wait_one_condition_.notify_all();
+
+                t = std::move(tasks_.front());
+                tasks_.pop_front();
+                return true;
             }
 
-            void run_(const unsigned int & pool_size)
+            void create_threads_(const unsigned int & pool_size)
             {
                 for (unsigned int i = 0; i < pool_size; i++)
                     threads_.emplace_back(std::make_shared<std::thread>(std::bind(&BrinK::pool::thread::pool_func_, this)));
             }
 
+            void remove_threads_()
+            {
+                std::for_each(threads_.begin(), threads_.end(), [](thread_ptr_t& td)
+                { 
+                    td->join();
+                });
+                threads_.clear();
+            }
+
             bool stopped_()
             {
-                std::unique_lock < std::mutex > lock_stop(stop_mutex_);
-                return stop_flag_ ? true : false;
+                std::unique_lock < std::mutex > lock(mutex_);
+                return stop_ ? true : false;
+            }
+
+            void awake_condition(std::unique_lock < std::mutex >& mutex, std::condition_variable& cond)
+            {
+                cond.notify_all();
+                mutex.unlock();
+            }
+
+            bool wait_(std::mutex& mutex, std::condition_variable& cond)
+            {
+                if (stopped_())
+                    return false;
+
+                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+
+                if (tasks_.empty())
+                    return false;
+
+                std::unique_lock < std::mutex > lock_wait(mutex);
+                lock_task.unlock();
+                cond.wait(lock_wait);
+
+                return true;
             }
         private:
             std::list < task_t >                                    tasks_;
@@ -187,11 +198,8 @@ namespace BrinK
 
             std::list < thread_ptr_t >                              threads_;
 
-            std::mutex                                              stop_mutex_;
-            volatile std::atomic_bool                               stop_flag_;
-
-            std::mutex                                              can_start_mutex_;
-            volatile std::atomic_bool                               can_start_;
+            std::mutex                                              mutex_;
+            std::atomic_bool                                        stop_;
 
             std::mutex                                              wait_all_mutex_;
             std::condition_variable                                 wait_all_condition_;
