@@ -5,7 +5,6 @@
 
 #include <brink_defines.h>
 #include <pool/pool.hpp>
-#include <pool/thread.hpp>
 #include <brink_utils.h>
 
 #include "tcp_socket.h"
@@ -16,7 +15,6 @@ namespace BrinK
     {
         typedef std::shared_ptr < BrinK::tcp::socket >                                    tcp_client_sptr_t;
         typedef std::shared_ptr < BrinK::pool::pool< tcp_client_sptr_t > >                pool_sptr_t;
-        typedef BrinK::pool::thread                                                       thread_pool_t;
         typedef std::function < void(tcp_client_sptr_t,
             const std::string&,
             const boost::system::error_code&,

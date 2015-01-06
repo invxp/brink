@@ -11,33 +11,23 @@ volatile std::atomic_bool            exit__;
 
 void random_test_broadcast()
 {
-    std::mt19937 engine(std::time(nullptr));
-    std::uniform_int_distribution < int > num(100, 200);
-
     static int send_count=0;
 
     while (!exit__)
     {
-        int rand = num(engine);
         tcp_server__.broadcast(BrinK::utils::to_string < int >(++send_count));
-        std::this_thread::sleep_for(std::chrono::milliseconds(rand));
+        BrinK::utils::sleep(BrinK::utils::random(100,200));
     }
-
 }
 
 void random_test_start_stop()
 {
-    std::mt19937 rng(std::time(nullptr));
-    std::uniform_int<> ui(100, 200);
-
     while (!exit__)
     {
-        int rand = ui(rng);
         tcp_server__.start(99);
-        std::this_thread::sleep_for(std::chrono::milliseconds(rand));
+        BrinK::utils::sleep(BrinK::utils::random(100, 200));
         tcp_server__.stop();
     }
-
 }
 
 int main(int, char**)

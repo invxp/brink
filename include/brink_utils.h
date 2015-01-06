@@ -39,7 +39,7 @@ namespace BrinK
 
         inline unsigned int random(const unsigned int& left, const unsigned int& right)
         {
-            std::mt19937 rng((unsigned int)std::time(nullptr));
+            static std::mt19937 rng((unsigned int)std::time(nullptr));
             std::uniform_int_distribution<unsigned int> num(left, right);
             return num(rng);
         }

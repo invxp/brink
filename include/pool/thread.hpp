@@ -198,7 +198,8 @@ namespace BrinK
             }
         private:
             std::list < task_t >                                    tasks_;
-             std::condition_variable                                 tasks_condition_;
+            std::condition_variable                                 tasks_condition_;
+            std::mutex                                              tasks_mutex_;
 
             std::list < thread_ptr_t >                              threads_;
 

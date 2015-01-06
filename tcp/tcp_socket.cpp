@@ -154,7 +154,7 @@ void BrinK::tcp::socket::handle_write(const boost::system::error_code& error,
     tcp_socket_sptr_t socket,
     const std::string& buff)
 {
-    if ((error) || (bytes_transferred >= expect_size))
+   if ((error) || (bytes_transferred >= expect_size))
     {
         {
             std::unique_lock < std::mutex > lock(send_buff_mutex_);
