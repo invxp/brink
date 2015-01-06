@@ -55,6 +55,8 @@ namespace BrinK
         private:
             void start_();
             void stop_();
+
+        private:
             void accept_clients_();
 
         private:
@@ -103,8 +105,11 @@ namespace BrinK
             work_sptr_t                                                 acceptor_work_;
             thread_sptr_t                                               acceptor_thread_;
 
-            std::atomic_bool                                            shut_down_;
-            std::recursive_mutex                                        shut_down_mutex_;
+            std::atomic_bool                                            stopped_;
+            std::atomic_bool                                            started_;
+
+            std::mutex                                                  stop_mutex_;
+            std::mutex                                                  accept_clients_mutex_;
 
             unsigned int                                                port_;
         };

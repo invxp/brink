@@ -23,6 +23,7 @@ namespace BrinK
             thread()
             {
                 stop_ = false;
+                started_ = false;
             }
             virtual ~thread()
             {
@@ -59,10 +60,12 @@ namespace BrinK
             {
                 std::unique_lock < std::mutex > lock(mutex_);
 
-                if (stop_)
+                if (started_)
                     return false;
 
                 create_threads_(pool_size);
+
+                started_ = true;
 
                 return true;
             }
@@ -73,7 +76,7 @@ namespace BrinK
 
                 std::unique_lock < std::mutex > lock_task(tasks_mutex_);
 
-                if (stop_)
+                if (!started_)
                     return false;
 
                 stop_ = true;
@@ -91,6 +94,8 @@ namespace BrinK
                 awake_condition(lock_one, wait_one_condition_);
 
                 stop_ = false;
+
+                started_ = false;
 
                 return true;
             }
@@ -193,13 +198,13 @@ namespace BrinK
             }
         private:
             std::list < task_t >                                    tasks_;
-            std::mutex                                              tasks_mutex_;
-            std::condition_variable                                 tasks_condition_;
+             std::condition_variable                                 tasks_condition_;
 
             std::list < thread_ptr_t >                              threads_;
 
             std::mutex                                              mutex_;
             std::atomic_bool                                        stop_;
+            std::atomic_bool                                        started_;
 
             std::mutex                                              wait_all_mutex_;
             std::condition_variable                                 wait_all_condition_;

@@ -232,11 +232,11 @@ int main(int argc, char** argv)
     g_exit = false;
     WSADATA data;
     WSAStartup(MAKEWORD(2, 2), &data);
-     for (int i = 0; i < 100; i++)
-         boost::thread thread(&thread_func_asio_test);
+    for (int i = 0; i < 100; i++)
+        boost::thread thread(&thread_func_asio_test);
  
-     for (int i = 0; i < 100; i++)
-         boost::thread thread(&thread_func_only_conn);
+    for (int i = 0; i < 100; i++)
+        boost::thread thread(&thread_func_only_conn);
 
     //thread_func_only_conn();
 

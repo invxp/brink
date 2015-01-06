@@ -12,7 +12,7 @@ volatile std::atomic_bool            exit__;
 void random_test_broadcast()
 {
     std::mt19937 engine(std::time(nullptr));
-    std::uniform_int_distribution < int > num(100, 1000);
+    std::uniform_int_distribution < int > num(100, 200);
 
     static int send_count=0;
 
@@ -28,7 +28,7 @@ void random_test_broadcast()
 void random_test_start_stop()
 {
     std::mt19937 rng(std::time(nullptr));
-    std::uniform_int<> ui(1000, 2000);
+    std::uniform_int<> ui(100, 200);
 
     while (!exit__)
     {
