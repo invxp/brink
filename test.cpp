@@ -2,38 +2,95 @@
 #include <atomic>
 #include <random>
 #include <future>
+#include <pool/thread.hpp>
 
 #include "./tcp/tcp_server.h"
+#include "./tcp/protobuf/protobuf_server.h"
+#include "./tcp/http/http_server.h"
 
-BrinK::tcp::server                   tcp_server__;
+BrinK::tcp::http_server             http_server;
+std::atomic_bool                    sig_exit;
 
-volatile std::atomic_bool            exit__;
+#include <pool/shared.hpp>
 
 void random_test_broadcast()
 {
     static int send_count=0;
 
-    while (!exit__)
+    while (!sig_exit)
     {
-        tcp_server__.broadcast(BrinK::utils::to_string < int >(++send_count));
+        http_server.broadcast("Broadcast!!!");
         BrinK::utils::sleep(BrinK::utils::random(100,200));
     }
 }
 
 void random_test_start_stop()
 {
-    while (!exit__)
+    while (!sig_exit)
     {
-        tcp_server__.start(99);
+        http_server.start(80);
         BrinK::utils::sleep(BrinK::utils::random(100, 200));
-        tcp_server__.stop();
+        http_server.stop();
     }
 }
 
+class test
+{
+public:
+    test():v(998),k(1024),haha("haha"){ std::cout << "Create£º" << this << std::endl; }
+    ~test(){ std::cout << "Release£º" << this << std::endl; }
+
+    void a(){ std::cout << "Value£º" << ++v <<std::endl;}
+
+    int v;
+    int k;
+    std::string haha;
+};
+
+void lazy(std::shared_ptr<test> p)
+{
+    static unsigned int count = 0;
+    if (count > 50)
+        return;
+
+    BrinK::utils::sleep(10);
+
+    std::async(std::bind(&lazy, p));
+
+    ++count;
+
+    p->a();
+}
+
+#include <pool/shared.hpp>
+
+
 int main(int, char**)
 {
-    unsigned int port=99;
-    tcp_server__.start(port);
+//     {
+//         BrinK::pool::shared<test> pool(2);
+// 
+//         pool.get([](std::shared_ptr<test> p)
+//         {
+//            std::async(std::bind(&lazy,p));
+//         });
+//     }
+    
+    BrinK::pool::shared<test> pp;
+
+    BrinK::buffer buffer;
+
+    buffer = "12345";
+
+    buffer.get(4, 459, [](char* b)
+    {
+        std::cout << b << std::endl;
+        char* a=b;
+        int aa=0;
+    });
+
+    unsigned int port=80;
+    http_server.start();
 
     std::cout << "Server started port : " << port << std::endl;
 
@@ -49,30 +106,29 @@ int main(int, char**)
 
             std::async([]
             {
-                tcp_server__.stop();
+                http_server.stop();
             });
         }
-
         else if (cmd == "s")
         {
             std::cout << "Start server" << std::endl;
 
             std::async([port]
             {
-                tcp_server__.start(port);
+                http_server.start(port);
             });
 
         }
         else if (cmd == "t")
         {
             std::cout << "Test thread start/stop" << std::endl;
-            exit__ = false;
+            sig_exit = false;
             std::async([]{random_test_start_stop(); });
         }
         else if (cmd.substr(0, 1) == "w")
         {
             std::cout << "Start broadcast thread" << std::endl;
-            exit__ = false;
+            sig_exit = false;
             std::async([]
             {
                 random_test_broadcast();
@@ -84,7 +140,7 @@ int main(int, char**)
 
             std::async([]
             { 
-                tcp_server__.broadcast("broadcast");
+                http_server.broadcast("A test");
             });
 
         }
@@ -92,7 +148,7 @@ int main(int, char**)
         {
             std::cout << "Stop threads" << std::endl;
 
-            exit__ = true;
+            sig_exit = true;
         }
     } while (true);
 

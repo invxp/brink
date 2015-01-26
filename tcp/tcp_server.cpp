@@ -8,47 +8,50 @@ acceptor_io_service_(nullptr),
 acceptor_(nullptr),
 acceptor_work_(nullptr),
 acceptor_thread_(nullptr),
-// 五种默认的server行为，如果需要外部监听，则在start函数定义
-recv_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
+recv_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
-    // 接收到数据：这里可以发送数据到客户端或处理各种逻辑，这里e不需要关心，s为接收的数据大小，m为元数据，c是该client
-    // 默认先返回数据，在读4个字节，并设置超时（毫秒）
-    async_write(c, m);
-    async_read(c, 4, 3000);
+    // 接收到数据：这里可以发送数据到客户端或处理各种逻辑，s为接收的数据大小，b为元数据，c是该client，e为错误码
+    // 默认先返回数据，在读N个字节，并设置超时（毫秒）
+    if (e)
+        return;
+
+    async_write(c, b->data());
+
+    b->clear();
+
+    async_read(c, b, (b->alloc(10) ? 10 : 0));
 }),
-accept_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
+accept_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
-    // 握手：client初始化，通过c->get_param可以得到他的unique_id，规则："ip地址:端口"，e、s通常不需要关心
-    // 默认读4个字节并设置超时时间（毫秒）
-    async_read(c, 4, 3000);
+    // 握手：client初始化，通过c->get_param可以得到他的unique_id，规则："ip地址:端口"
+    // 默认读N个字节并设置超时时间（毫秒）
+    if (e)
+        return;
+
+    char_sptr_t buffer = std::make_shared < BrinK::buffer >(10);
+
+    async_read(c, buffer, buffer->size());
 }),
-timeout_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
+send_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
-    // 超时，m不需要关心，e为出错码，一般为995，s为超时次数
-    // 默认关闭socket
-    c->free();
-}),
-send_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
-{
-    // 发送完成，m为发送完成的消息，e不参考，s为消息大小
-    // std::cout << "Sended : " << m << std::endl;
-}),
-error_handler_([this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
-{
-    // 出错，此时已经回收该client、不需要关闭client和释放等任何操作，e为错误原因，其他可不参考
-    // std::cout << "Error : " << e << std::endl;
-})
+    // 发送完成，b为发送完成的消息
+    if (e)
+        return;
+
+    // std::cout << "Sended : " << b->data() << std::endl;
+}
+)
 {
     stopped_ = false;
 
     started_ = false;
 
     for (size_t i = 0; i < std::thread::hardware_concurrency(); i++)
-        io_services_.emplace_back(std::make_shared < boost::asio::io_service >());
+        io_services_.emplace_back(std::make_unique < boost::asio::io_service >());
 
-    clients_pool_ = std::make_shared< pool::pool < tcp_client_sptr_t > >([this]
+    clients_pool_ = std::make_unique< pool::pool < tcp_client_sptr_t > >([this]
     {
-        return tcp_client_sptr_t(std::make_shared < tcp::socket >(this->get_io_service()));
+        return tcp_client_sptr_t(std::make_shared < tcp::socket >(this->get_io_service_()));
     }
     );
 }
@@ -59,31 +62,23 @@ BrinK::tcp::server::~server()
 }
 
 void BrinK::tcp::server::start(const unsigned int& port,
-    const complete_handler_t& recv_complete,
-    const complete_handler_t& send_complete,
-    const complete_handler_t& accept_complete,
-    const complete_handler_t& error_handler,
-    const complete_handler_t& timeout_handler)
+    const complete_handler_t&                      accept_handler,
+    const complete_handler_t&                      recv_handler,
+    const complete_handler_t&                      send_handler)
 {
-    std::unique_lock < std::mutex > lock(stop_mutex_);
+    std::lock_guard < std::mutex > lock(stop_mutex_);
 
     if (started_)
         return;
 
-    if (recv_complete)
-        recv_handler_ = recv_complete;
+    if (accept_handler)
+        accept_handler_ = accept_handler;
 
-    if (send_complete)
-        send_handler_ = send_complete;
+    if (recv_handler)
+        recv_handler_ = recv_handler;
 
-    if (accept_complete)
-        accept_handler_ = accept_complete;
-
-    if (error_handler)
-        error_handler_ = error_handler;
-
-    if (timeout_handler)
-        timeout_handler_ = timeout_handler;
+    if (send_handler)
+        send_handler_ = send_handler;
 
     port_ = port;
 
@@ -94,32 +89,32 @@ void BrinK::tcp::server::start(const unsigned int& port,
 
 void BrinK::tcp::server::start_()
 {
-    acceptor_io_service_ = std::make_shared < boost::asio::io_service >();
+    acceptor_io_service_ = std::make_unique < boost::asio::io_service >();
 
-    acceptor_work_ = std::make_shared < boost::asio::io_service::work >(*acceptor_io_service_);
+    acceptor_work_ = std::make_unique < boost::asio::io_service::work >(*acceptor_io_service_);
 
-    acceptor_ = std::make_shared < boost::asio::ip::tcp::acceptor >(*acceptor_io_service_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_));
+    acceptor_ = std::make_unique < boost::asio::ip::tcp::acceptor >(*acceptor_io_service_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_));
 
-    acceptor_thread_ = std::make_shared < std::thread >([this]{ boost::system::error_code ec; this->acceptor_io_service_->run(ec); });
+    acceptor_thread_ = std::make_unique < std::thread >([this]{ boost::system::error_code ec; this->acceptor_io_service_->run(ec); });
 
-    std::for_each(io_services_.begin(), io_services_.end(), [this](io_service_sptr_t io)
+    std::for_each(io_services_.begin(), io_services_.end(), [this](const io_service_uptr_t& io)
     {
-        io_service_works_.emplace_back(std::make_shared < boost::asio::io_service::work >(*io));
-        io_service_threads_.emplace_back(std::make_shared < std::thread >([io]{ boost::system::error_code ec; io->run(ec); }));
+        io_service_works_.emplace_back(std::make_unique < boost::asio::io_service::work >(*io));
+        io_service_threads_.emplace_back(std::make_unique < std::thread >([&io]{ boost::system::error_code ec; io->run(ec); }));
     });
 
-    accept_clients_();
+    accept_clients();
 }
 
 void BrinK::tcp::server::stop()
 {
-    std::unique_lock < std::mutex > lock_stop(stop_mutex_);
+    std::lock_guard < std::mutex > lock_stop(stop_mutex_);
 
     if (!started_)
         return;
 
     {
-        std::unique_lock < std::mutex > lock_accept(accept_clients_mutex_);
+        std::lock_guard < std::mutex > lock_accept(accept_clients_mutex_);
         stopped_ = true;
     }
 
@@ -144,71 +139,59 @@ void BrinK::tcp::server::stop_()
     acceptor_thread_.reset();
 
     // 关闭所有客户端，并且取消timer，分别都会通过recv收到error消息
-    clients_pool_->each([this](tcp_client_sptr_t& client)
+    clients_pool_->each([this](const tcp_client_sptr_t& client)
     {
         client->free();
     });
 
     // 等待所有io完成
     io_service_works_.clear();
-    std::for_each(io_service_threads_.begin(), io_service_threads_.end(), [](thread_sptr_t& td){ td->join(); });
-    std::for_each(io_services_.begin(), io_services_.end(), [](io_service_sptr_t& io){ io->reset(); });
+    std::for_each(io_service_threads_.begin(), io_service_threads_.end(), [](const thread_uptr_t& td){ td->join(); });
+    std::for_each(io_services_.begin(), io_services_.end(), [](const io_service_uptr_t& io){ io->reset(); });
     io_service_threads_.clear();
 }
 
 void BrinK::tcp::server::broadcast(const std::string& msg)
 {
-    std::unique_lock < std::mutex > lock(stop_mutex_);
+    std::lock_guard < std::mutex > lock(stop_mutex_);
 
     if ((stopped_) || (!started_))
         return;
 
-    clients_pool_->each([this, msg](tcp_client_sptr_t& client)
+    clients_pool_->each([this, &msg](const tcp_client_sptr_t& client)
     {
-        if (client->raw_socket().is_open())
-            client->async_write(msg,
-            std::bind(&server::handle_write,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            std::placeholders::_4));
+        async_write(client, msg);
     }
     );
 }
 
-void BrinK::tcp::server::async_read(tcp_client_sptr_t client,
-    const unsigned int& expect_size,
-    const unsigned __int64& timeout_millseconds)
+void BrinK::tcp::server::async_read(const tcp_client_sptr_t& client,
+    char_sptr_t                                              buffer,
+    const size_t&                                            expect_size,
+    const unsigned __int64&                                  millseconds,
+    const pred_t&                                            pred)
 {
-    client->async_read(expect_size,
-        std::bind(&server::handle_read,
+    client->async_read(std::bind(&server::handle_read,
         this,
         std::placeholders::_1,
         std::placeholders::_2,
         std::placeholders::_3,
-        std::placeholders::_4
-        )
-        );
-
-    client->async_timeout(timeout_millseconds,
-        std::bind(&server::handle_timeout,
-        this, std::placeholders::_1,
-        std::placeholders::_2,
-        std::placeholders::_3,
-        std::placeholders::_4)
-        );
+        std::placeholders::_4),
+        buffer,
+        expect_size,
+        millseconds,
+        pred);
 }
 
-void BrinK::tcp::server::async_write(tcp_client_sptr_t client, const std::string& data)
+void BrinK::tcp::server::async_write(const tcp_client_sptr_t& client, const std::string& data)
 {
-    client->async_write(data,
-        std::bind(&server::handle_write,
+    client->async_write(std::bind(&server::handle_write,
         this,
         std::placeholders::_1,
         std::placeholders::_2,
         std::placeholders::_3,
-        std::placeholders::_4));
+        std::placeholders::_4),
+        data);
 }
 
 unsigned int BrinK::tcp::server::get_port() const
@@ -216,17 +199,15 @@ unsigned int BrinK::tcp::server::get_port() const
     return port_;
 }
 
-void BrinK::tcp::server::accept_clients_()
+void BrinK::tcp::server::accept_clients()
 {
-    std::unique_lock < std::mutex > lock(accept_clients_mutex_);
+    std::lock_guard < std::mutex > lock(accept_clients_mutex_);
 
     if (stopped_)
         return;
 
-    tcp_client_sptr_t& client = clients_pool_->get([this](tcp_client_sptr_t& client)
+    clients_pool_->get([this](const tcp_client_sptr_t& client)
     {
-        client->reset();
-
         this->acceptor_->async_accept(client->raw_socket(),
             boost::bind(&server::handle_accept,
             this,
@@ -235,22 +216,20 @@ void BrinK::tcp::server::accept_clients_()
     });
 }
 
-void BrinK::tcp::server::handle_accept(tcp_client_sptr_t client, const boost::system::error_code& error)
+void BrinK::tcp::server::handle_accept(const tcp_client_sptr_t& client, const boost::system::error_code& error)
 {
     // socket未握手之前，需单独处理，之后所有错误都在recv，这里如果出错，说明发生了比较严重的异常
     if (error)
-    {
-        handle_error(client, error, 0, "");
-    }
+        free_client(client);
     else
-    {
         client->accept();
-        accept_handler_(boost::any_cast <tcp_client_sptr_t> (client), "", error, 0);
-    }
-    accept_clients_();
+
+    accept_handler_(client, nullptr, error, 0);
+
+    accept_clients();
 }
 
-boost::asio::io_service& BrinK::tcp::server::get_io_service()
+boost::asio::io_service& BrinK::tcp::server::get_io_service_()
 {
     boost::asio::io_service& io_service = *io_services_[io_service_pos_];
 
@@ -262,40 +241,32 @@ boost::asio::io_service& BrinK::tcp::server::get_io_service()
     return io_service;
 }
 
-void BrinK::tcp::server::handle_error(const boost::any& client,
-    const boost::system::error_code& error,
-    const size_t& bytes_transferred,
-    const std::string& buff)
-{
-    clients_pool_->free(boost::any_cast <tcp_client_sptr_t> (client), [](tcp_client_sptr_t& c){c->free(); });
-    error_handler_(boost::any_cast <tcp_client_sptr_t> (client), buff, error, 0);
-}
-
 void BrinK::tcp::server::handle_read(const boost::any& client,
-    const boost::system::error_code& error,
-    const size_t& bytes_transferred,
-    const std::string& buff)
+    const boost::system::error_code&                   error,
+    const size_t&                                      bytes_transferred,
+    const char_sptr_t&                                 buff)
 {
-    // 任何的异常请求，都会到handle_read里处理，它不仅负责接收数据，而且负责出错调用
-    if (error)
-        handle_error(client, error, bytes_transferred, buff);
-    else
-        recv_handler_(boost::any_cast <tcp_client_sptr_t> (client), buff, error, bytes_transferred);
-}
+    if (error || !bytes_transferred)
+        free_client(boost::any_cast < const tcp_client_sptr_t& >(client));
 
-void BrinK::tcp::server::handle_timeout(const boost::any& client,
-    const boost::system::error_code& error,
-    const size_t& timeout_count,
-    const std::string& buff)
-{
-    timeout_handler_(boost::any_cast <tcp_client_sptr_t> (client), buff, error, timeout_count);
+    recv_handler_(boost::any_cast < const tcp_client_sptr_t& >(client), buff, error, bytes_transferred);
 }
 
 void BrinK::tcp::server::handle_write(const boost::any& client,
-    const boost::system::error_code& error,
-    const size_t& bytes_transferred,
-    const std::string& buff)
+    const boost::system::error_code&                    error,
+    const size_t&                                       bytes_transferred,
+    const char_sptr_t&                                  buff)
 {
-    // send无论出错与否，不处理相关逻辑，否则会异常，防止资源竞争，统一交给recv处理
-    send_handler_(boost::any_cast <tcp_client_sptr_t> (client), buff, error, bytes_transferred);
+    if (error || !bytes_transferred)
+        free_client(boost::any_cast < const tcp_client_sptr_t& >(client));
+
+    send_handler_(boost::any_cast < const tcp_client_sptr_t& >(client), buff, error, bytes_transferred);
+}
+
+void BrinK::tcp::server::free_client(const tcp_client_sptr_t& client)
+{
+    clients_pool_->free(client, [](const tcp_client_sptr_t& c)
+    {
+        c->free();
+    });
 }

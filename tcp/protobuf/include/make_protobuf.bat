@@ -1,0 +1,1 @@
+protoc.exe -I=.\ --cpp_out=.\ .\pbuf.proto
