@@ -4,7 +4,7 @@ Created By InvXp 2014-11
 使用方式
 初始化需要传递该对象的constructor，且分配一个大小（会递增）
 pool<obj> p([]{return *new obj(...); }, 32);
-auto o=p.get([](obj&){...});
+p.get([](obj&){...});
 p.free(o,[](obj&){...});
 p.each...
 */
@@ -12,7 +12,7 @@ p.each...
 #pragma once
 
 #include <mutex>
-#include <list>
+#include <set>
 
 namespace BrinK
 {
@@ -20,79 +20,83 @@ namespace BrinK
     {
         template < class T >
 
-        class pool
+        class pool final
         {
         public:
             pool(const std::function < T() >& constructor, const unsigned __int64& size = 32) :new_(constructor)
             {
-                std::unique_lock < std::mutex > lock(mutex_);
+                std::lock_guard < std::mutex > lock(mutex_);
                 for (auto i = 0; i < size; ++i)
-                    free_list_.emplace_back(new_());
+                    free_list_.emplace(new_());
             }
 
-            virtual ~pool()
+            ~pool()
             {
-                std::unique_lock < std::mutex > lock(mutex_);
+                std::lock_guard < std::mutex > lock(mutex_);
                 busy_list_.clear();
                 free_list_.clear();
             }
         public:
-            T& get(const std::function < void(T& t) >& op = [](T&){})
+            void get(const std::function < void(const T& t) >& op = [](const T&){})
             {
-                std::unique_lock < std::mutex > lock(mutex_);
-
-                if (free_list_.empty())
-                    busy_list_.emplace_back(new_());
+                std::lock_guard < std::mutex > lock(mutex_);
+                
+                if (free_list_.empty()) 
+                    op(*busy_list_.emplace(new_()).first);
                 else
                 {
-                    busy_list_.emplace_back(free_list_.front());
-                    free_list_.pop_front();
+                    op(*busy_list_.emplace(*free_list_.begin()).first);
+                    free_list_.erase(free_list_.begin());
                 }
-
-                op(busy_list_.back());
-
-                return busy_list_.back();
-
             }
-            void free(const T& t, const std::function < void(T& t) >& op = [](T&){})
+
+            void free(const T& t, const std::function < void(const T& t) >& op = [](const T&){})
             {
-                std::unique_lock < std::mutex > lock(mutex_);
-                free_list_.emplace_back(t);
-                busy_list_.remove(free_list_.back());
-                op(free_list_.back());
+                std::lock_guard < std::mutex > lock(mutex_);
+
+                auto it = busy_list_.find(t);
+                if (it != busy_list_.end())
+                {
+                    free_list_.emplace(t);
+                    busy_list_.erase(it);
+                    op(t);
+                }
             }
 
         public:
             size_t busy_size()
             {
-                std::unique_lock < std::mutex > lock(mutex_);
+                std::lock_guard < std::mutex > lock(mutex_);
                 return busy_list_.size();
             }
+
             size_t free_size()
             {
-                std::unique_lock < std::mutex > lock(mutex_);
+                std::lock_guard < std::mutex > lock(mutex_);
                 return free_list_.size();
             }
 
         public:
-            void each(const std::function < void(T& t) >& op = [](T&){})
+            void each(const std::function < void(const T& t) >& op = [](const T&){})
             {
-                std::unique_lock < std::mutex > lock(mutex_);
-                std::for_each(busy_list_.begin(), busy_list_.end(), [&op](T& t){op(t); });
+                std::lock_guard < std::mutex > lock(mutex_);
+
+                std::for_each(busy_list_.begin(), busy_list_.end(), [&op](const T& t){ op(t); });
             }
 
-            void clear(const std::function < void(T& t) >& op = [](T&){})
+            void clear(const std::function < void(const T& t) >& op = [](const T&){})
             {
-                std::unique_lock < std::mutex > lock(mutex_);
-                std::for_each(busy_list_.begin(), busy_list_.end(), [&op](T& t){op(t); });
+                std::lock_guard < std::mutex > lock(mutex_);
+
+                std::for_each(busy_list_.begin(), busy_list_.end(), [&op](const T& t){ op(t); });
                 std::copy(busy_list_.begin(), busy_list_.end(), std::back_inserter(free_list_));
                 busy_list_.clear();
             }
 
         private:
             std::mutex                                  mutex_;
-            std::list< T >                              busy_list_;
-            std::list< T >                              free_list_;
+            std::set< T >                               busy_list_;
+            std::set< T >                               free_list_;
             std::function< T() >                        new_;
 
         };

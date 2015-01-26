@@ -1,32 +1,24 @@
 #pragma once
 
+#include <iostream>
+
 #include <thread>
 #include <memory>
 #include <boost/asio.hpp>
-#include <boost/any.hpp>
-#include <iostream>
 
-typedef std::shared_ptr < boost::asio::io_service >                  io_service_sptr_t;
-typedef std::shared_ptr < boost::asio::io_service::work >            work_sptr_t;
+typedef std::unique_ptr < boost::asio::io_service >                  io_service_uptr_t;
+typedef std::unique_ptr < boost::asio::io_service::work >            work_uptr_t;
 
-typedef std::shared_ptr < std::thread >                              thread_sptr_t;
+typedef std::unique_ptr < std::thread >                              thread_uptr_t;
 
-typedef std::shared_ptr < boost::asio::ip::tcp::socket >             tcp_socket_sptr_t;
-typedef std::shared_ptr < boost::asio::ip::udp::socket >             udp_socket_sptr_t;
+typedef std::unique_ptr < boost::asio::ip::tcp::acceptor >           tcp_acceptor_uptr_t;
+typedef std::unique_ptr < boost::asio::ip::udp::endpoint >           udp_endport_uptr_t;
 
-typedef std::shared_ptr < boost::asio::ip::tcp::acceptor >           tcp_acceptor_sptr_t;
-typedef std::shared_ptr < boost::asio::ip::udp::endpoint >           udp_endport_sptr_t;
+typedef std::unique_ptr < boost::asio::strand >                      strand_uptr_t;
 
-typedef std::shared_ptr < boost::asio::deadline_timer >              timer_sptr_t;
+typedef std::unique_ptr < boost::asio::ip::tcp::socket >             tcp_socket_uptr_t;
+typedef std::unique_ptr < boost::asio::ip::udp::socket >             udp_socket_uptr_t;
 
-typedef std::shared_ptr < boost::asio::strand >                      strand_sptr_t;
+typedef std::unique_ptr < boost::asio::deadline_timer >              timer_uptr_t;
 
-typedef std::shared_ptr < boost::asio::streambuf >                   streambuf_sptr_t;
-
-typedef std::function < void() >                                     bind_handler_t;
-
-typedef std::function < void(const boost::any& any,
-    const boost::system::error_code& ec,
-    const size_t& bytes_transferred,
-    const std::string& buff) >
-    client_handler_t;
+typedef std::unique_ptr < std::string >                              string_uptr_t;

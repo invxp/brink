@@ -1,10 +1,8 @@
 #include "protobuf_server.h"
 
-BrinK::tcp::protobuf_server::protobuf_server(const unsigned int& default_receive_len /*= 10*/,
-    const unsigned __int64& default_socket_recv_timeout_millseconds /*= 30000*/) 
+BrinK::tcp::protobuf_server::protobuf_server()
 {
-    set_receive_length(default_receive_len);
-    set_timeout(default_socket_recv_timeout_millseconds);
+
 }
 
 BrinK::tcp::protobuf_server::~protobuf_server()
@@ -12,99 +10,91 @@ BrinK::tcp::protobuf_server::~protobuf_server()
 
 }
 
-void BrinK::tcp::protobuf_server::start(const unsigned int& port, const complete_handler_t& recv_complete /*= nullptr*/, const complete_handler_t& send_complete /*= nullptr*/, const complete_handler_t& accept_complete /*= nullptr*/, const complete_handler_t& error_handler /*= nullptr*/, const complete_handler_t& timeout_handler /*= nullptr*/)
+void BrinK::tcp::protobuf_server::start(const unsigned int& port)
 {
-    auto recv_handler = [this](tcp_client_sptr_t c, const std::string& m, const boost::system::error_code& e, const size_t& s)
-    {
-        c->get_param([this,c,&m](param_sptr_t p)
-        {
-            if (!p->pbuf_head_received)
-            {
-                pbuf_head head;
-                if (!head.ParseFromString(m))
-                {
-                    ++p->error_count;
-                    return;
-                }
-                p->pbuf_head_received = true;
-                p->length = head.length();
-                p->type = head.type();
-
-                c->async_read(p->length,
-                    std::bind(&protobuf_server::handle_read,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2,
-                    std::placeholders::_3,
-                    std::placeholders::_4),
-                    default_socket_recv_timeout_millseconds_,
-                    std::bind(&protobuf_server::handle_timeout,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2,
-                    std::placeholders::_3,
-                    std::placeholders::_4));
-            }
-            else
-            {
-                pbuf_body body;
-                if (!body.ParseFromString(m))
-                {
-                    ++p->error_count;
-                    return;
-                }
-                p->pbuf_head_received = false;
-                p->length = body.length();
-                p->type = body.type();
-                p->binary = body.binary();
-                p->data = body.str();
-                p->reserve = body.reserve();
-
-                c->async_write("OK",
-                    std::bind(&protobuf_server::handle_write,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2,
-                    std::placeholders::_3,
-                    std::placeholders::_4));
-
-                c->async_read(default_recv_len_,
-                    std::bind(&protobuf_server::handle_read,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2,
-                    std::placeholders::_3,
-                    std::placeholders::_4),
-                    default_socket_recv_timeout_millseconds_,
-                    std::bind(&protobuf_server::handle_timeout,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2,
-                    std::placeholders::_3,
-                    std::placeholders::_4));
-            }
-        });
-    };
-
-    __super::start(port, recv_handler, send_complete, accept_complete, error_handler, timeout_handler);
+    __super::start(port,
+        std::bind(&tcp::protobuf_server::accept_handler,
+        this,
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3,
+        std::placeholders::_4),
+        std::bind(&tcp::protobuf_server::read_handler,
+        this,
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3,
+        std::placeholders::_4)
+        );
 }
 
-void BrinK::tcp::protobuf_server::handle_read(const boost::any& client, const boost::system::error_code& error, const size_t& bytes_transferred, const std::string& buff)
+void BrinK::tcp::protobuf_server::handle_read(const boost::any& client,
+    const boost::system::error_code&                            error,
+    const size_t&                                               bytes_transferred,
+    const char_sptr_t&                                          buff)
 {
     __super::handle_read(client, error, bytes_transferred, buff);
 }
 
-void BrinK::tcp::protobuf_server::handle_write(const boost::any& client, const boost::system::error_code& error, const size_t& bytes_transferred, const std::string& buff)
+void BrinK::tcp::protobuf_server::handle_write(const boost::any& client,
+    const boost::system::error_code&                             error,
+    const size_t&                                                bytes_transferred,
+    const char_sptr_t&                                           buff)
 {
     __super::handle_write(client, error, bytes_transferred, buff);
 }
 
-void BrinK::tcp::protobuf_server::handle_timeout(const boost::any& client, const boost::system::error_code& error, const size_t& timeout_count, const std::string& buff)
+void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
+    const char_sptr_t&                                                  b,
+    const boost::system::error_code&                                    e,
+    const size_t&                                                       s)
 {
-    __super::handle_timeout(client, error, timeout_count, buff);
+    c->get_param([this, &c, &b, &s](const param_uptr_t& p)
+    {
+        if (!p->head_received)
+        {
+            pbuf_head head;
+            if (!head.ParseFromArray(b->data(), s))
+            {
+                free_client(c);
+                return;
+            }
+            p->head_received = true;
+            p->length = head.body_length();
+            p->type = head.type();
+
+            b->clear();
+
+            async_read(c, b, (b->alloc(p->length) ? p->length : 0));
+        }
+        else
+        {
+            pbuf_body body;
+            if (!body.ParseFromArray(b->data(), s))
+            {
+                free_client(c);
+                return;
+            }
+            p->head_received = false;
+            p->binary = body.binary();
+            p->data = body.data();
+            p->reserve = body.reserve();
+
+            b->clear();
+
+            async_read(c, b, (b->alloc(PROTOBUF_HEAD_LENGTH) ? PROTOBUF_HEAD_LENGTH : 0));
+        }
+    });
+
 }
 
+void BrinK::tcp::protobuf_server::accept_handler(const tcp_client_sptr_t& c,
+    const char_sptr_t&                                                    b,
+    const boost::system::error_code&                                      e,
+    const size_t&                                                         s)
+{
+    char_sptr_t buffer = std::make_shared < BrinK::buffer >(PROTOBUF_HEAD_LENGTH);
 
-
-
+    async_read(c, buffer, buffer->size());
+}
 

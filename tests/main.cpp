@@ -1,11 +1,12 @@
-#include <Windows.h>
-#include <WinSock.h>
 #include <process.h>
 #include <string>
 #include <vector>
 #include <atomic>
 #include <iostream>
+#include <memory>
 #include <boost/thread.hpp>
+#include <boost/asio.hpp>
+#include <boost/any.hpp>
 
 using namespace std;
 
@@ -117,9 +118,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 void thread_func_asio_test()
 {
+
     bool   conned = false;
     SOCKET S = INVALID_SOCKET;
-    std::string buf = "TEST";
+    std::string buf = "12345678901234567890";
 
     while (true)
     {
@@ -133,7 +135,7 @@ void thread_func_asio_test()
 
         server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(99);
+        server_addr.sin_port = htons(80);
         if (!conned)
         {
             if (connect(S, (struct sockaddr*)&server_addr, sizeof(server_addr)))
@@ -145,7 +147,7 @@ void thread_func_asio_test()
             }
             conned = true;
         }
-
+        
         int sent = send(S, buf.c_str(), buf.length(), 0);
         if (sent <= 0)
         {
@@ -197,7 +199,7 @@ void thread_func_only_conn()
 
         server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
         server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(99);
+        server_addr.sin_port = htons(80);
         if (!conned)
         {
             if (connect(S, (struct sockaddr*)&server_addr, sizeof(server_addr)))
@@ -227,18 +229,122 @@ void thread_func_only_conn()
 
     }
 }
+
+void thread_func_http_test()
+{
+
+    bool   conned = false;
+    SOCKET S = INVALID_SOCKET;
+    std::string buf = "GET / HTTP1.1\r\n\r\nCaoNiMa";
+    while (true)
+    {
+        if (g_exit)
+            break;
+
+        if (S == INVALID_SOCKET)
+            S = socket(AF_INET, SOCK_STREAM, 0);
+
+        struct sockaddr_in server_addr;
+
+        server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(80);
+        if (!conned)
+        {
+            if (connect(S, (struct sockaddr*)&server_addr, sizeof(server_addr)))
+            {
+                closesocket(S);
+                S = INVALID_SOCKET;
+                Sleep(10);
+                continue;
+            }
+            conned = true;
+        }
+
+        send(S, buf.c_str(), buf.length(), 0);
+
+        closesocket(S);
+        S = INVALID_SOCKET;
+        conned = false;
+        Sleep(10);
+
+    }
+}
+
+bool calc_file_date_expired(const std::wstring& file)
+{
+    HANDLE        h;
+    FILETIME      cr;
+    SYSTEMTIME    last;
+    SYSTEMTIME    today;
+
+    GetLocalTime(&today);
+
+    h = CreateFile(file.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (!h)
+        return true;
+
+    if (!GetFileTime(h, &cr, nullptr, nullptr))
+    {
+        CloseHandle(h);
+        return true;
+    }
+
+    CloseHandle(h);
+
+    if (!FileTimeToSystemTime(&cr, &last))
+        return true;
+
+    if ((today.wYear != last.wYear) || (today.wMonth != last.wMonth) || (today.wDay != last.wDay))
+        return true;
+
+    return false;
+}
+
+
+
+class test
+{
+public:
+    test(){ std::cout << "Create" << std::endl; }
+    ~test(){ std::cout << "Release" << std::endl; }
+};
+
+
 int main(int argc, char** argv)
 {
     g_exit = false;
     WSADATA data;
     WSAStartup(MAKEWORD(2, 2), &data);
+
+    //    HANDLE H = CreateFileA("", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    std::string test1 = "C:\\Users\\InvXp\\AppData\\Roaming\\youku\\cache\\_aHR0cHM6Ly9vcGVuYXBpLnlvdWt1LmNvbS92Mi91c2Vycy9wbGF5bG9nL2dldC5qc29uP2NsaWVudF9pZD1lNTdiYzgyYjFhOWRjZDJmJnVzZXJfdHlwZT1ndWlkJnVzZXJfaWQ9MTEwMDAwMDAwMDAwMDAwMDAwMDA1NDc1NEU2MDI4RDI0NDU1NjU3MyZzdGFydF90aW1lPTAmcGFnZT0xJmNvdW50PTEwMA==";
+
+    size_t len = test1.length();
+
+    if (len>=256)
+        test1=test1.substr(0, 259);
+
+    HANDLE H = CreateFileA(test1.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (H == INVALID_HANDLE_VALUE)
+    {
+        DWORD DW = GetLastError();
+        int a=0;
+    }
+    /*
     for (int i = 0; i < 100; i++)
         boost::thread thread(&thread_func_asio_test);
- 
+
     for (int i = 0; i < 100; i++)
         boost::thread thread(&thread_func_only_conn);
 
-    //thread_func_only_conn();
+    for (int i = 0; i < 100; i++)
+        boost::thread thread(&thread_func_http_test);
+    */
+    thread_func_http_test();
 
     HHOOK hhkLowLevelKybd = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0);
 
