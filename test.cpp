@@ -64,7 +64,6 @@ void lazy(std::shared_ptr<test> p)
 
 #include <pool/shared.hpp>
 
-
 int main(int, char**)
 {
 //     {
@@ -82,11 +81,11 @@ int main(int, char**)
 
     buffer = "12345";
 
-    buffer.get(4, 459, [](char* b)
+    buffer.get(4, 1, [](char* b, const size_t& count)
     {
-        std::cout << b << std::endl;
-        char* a=b;
-        int aa=0;
+        std::string buf(b, count);
+
+        std::cout << buf << buf.length() << std::endl;
     });
 
     unsigned int port=80;

@@ -70,7 +70,7 @@ void BrinK::tcp::socket::free()
 }
 
 void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
-    char_sptr_t                                             buffer,
+    buff_sptr_t                                             buffer,
     const size_t&                                           expect_size,
     const unsigned __int64&                                 milliseconds,
     const pred_t&                                           predicate)
@@ -109,7 +109,7 @@ void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
 void BrinK::tcp::socket::handle_read(const boost::system::error_code& error,
     const size_t&                                                     bytes_transferred,
     const client_handler_t&                                           handler,
-    const char_sptr_t&                                                buffer,
+    const buff_sptr_t&                                                buffer,
     const size_t&                                                     expect_size,
     const pred_t&                                                     pred)
 {
@@ -141,7 +141,7 @@ void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, cons
     if (!avalible_)
         return;
 
-    char_sptr_t buffer = std::make_shared < BrinK::buffer >(data);
+    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(data);
 
     socket_->async_write_some(
         boost::asio::buffer(buffer->raw(), buffer->size()),
@@ -156,7 +156,7 @@ void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, cons
 void BrinK::tcp::socket::handle_write(const boost::system::error_code& error,
     const size_t&                                                      bytes_transferred,
     const client_handler_t&                                            handler,
-    const char_sptr_t&                                                 buffer
+    const buff_sptr_t&                                                 buffer
     )
 {
     buffer->commit(bytes_transferred);

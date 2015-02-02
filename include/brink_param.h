@@ -1,14 +1,15 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 namespace BrinK
 {
-    class param
+    class param final
     {
     public:
         param(){ reset(); }
-        virtual ~param(){}
+        ~param(){}
 
     public:
         void reset()

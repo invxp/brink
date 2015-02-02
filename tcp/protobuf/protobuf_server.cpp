@@ -31,7 +31,7 @@ void BrinK::tcp::protobuf_server::start(const unsigned int& port)
 void BrinK::tcp::protobuf_server::handle_read(const boost::any& client,
     const boost::system::error_code&                            error,
     const size_t&                                               bytes_transferred,
-    const char_sptr_t&                                          buff)
+    const buff_sptr_t&                                          buff)
 {
     __super::handle_read(client, error, bytes_transferred, buff);
 }
@@ -39,13 +39,13 @@ void BrinK::tcp::protobuf_server::handle_read(const boost::any& client,
 void BrinK::tcp::protobuf_server::handle_write(const boost::any& client,
     const boost::system::error_code&                             error,
     const size_t&                                                bytes_transferred,
-    const char_sptr_t&                                           buff)
+    const buff_sptr_t&                                           buff)
 {
     __super::handle_write(client, error, bytes_transferred, buff);
 }
 
 void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
-    const char_sptr_t&                                                  b,
+    const buff_sptr_t&                                                  b,
     const boost::system::error_code&                                    e,
     const size_t&                                                       s)
 {
@@ -89,11 +89,11 @@ void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
 }
 
 void BrinK::tcp::protobuf_server::accept_handler(const tcp_client_sptr_t& c,
-    const char_sptr_t&                                                    b,
+    const buff_sptr_t&                                                    b,
     const boost::system::error_code&                                      e,
     const size_t&                                                         s)
 {
-    char_sptr_t buffer = std::make_shared < BrinK::buffer >(PROTOBUF_HEAD_LENGTH);
+    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(PROTOBUF_HEAD_LENGTH);
 
     async_read(c, buffer, buffer->size());
 }

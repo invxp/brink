@@ -3,11 +3,9 @@
 #include <brink_defines.h>
 #include <brink_handler.h>
 #include <brink_buffer.h>
-#include <brink_buffer.h>
 #include <brink_utils.h>
 #include <brink_param.h>
 
-#include <list>
 #include <mutex>
 #include <atomic>
 
@@ -34,7 +32,7 @@ namespace BrinK
 
         public:
             void async_read(const client_handler_t& recv_handler,
-                char_sptr_t                         buffer,
+                buff_sptr_t                         buffer,
                 const size_t&                       expect_size,
                 const unsigned __int64&             milliseconds,
                 const pred_t&                       predicate);
@@ -46,14 +44,14 @@ namespace BrinK
             void handle_read(const boost::system::error_code&   error,
                 const size_t&                                   bytes_transferred,
                 const client_handler_t&                         handler,
-                const char_sptr_t&                              buffer,
+                const buff_sptr_t&                              buffer,
                 const size_t&                                   expect_size,
                 const pred_t&                                   pred);
 
             void handle_write(const boost::system::error_code&  error,
                 const size_t&                                   bytes_transferred,
                 const client_handler_t&                         handler,
-                const char_sptr_t&                              buffer);
+                const buff_sptr_t&                              buffer);
 
             void handle_timeout(const boost::system::error_code& error,
                 const unsigned __int64&                          milliseconds);

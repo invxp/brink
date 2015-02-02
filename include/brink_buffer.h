@@ -10,7 +10,6 @@ Created By InvXp 2014-12
 
 #include <vector>
 #include <memory>
-#include <string>
 #include <atomic>
 
 namespace BrinK
@@ -18,12 +17,12 @@ namespace BrinK
     class buffer final
     {
     public:
-        buffer(const size_t& size = 0) : pos_(0), spliter_('\0')
+        buffer(const size_t& size = 0) : pos_(0)
         {
             alloc(size);
         }
 
-        buffer(const std::string& data) : pos_(0), spliter_('\0')
+        buffer(const std::string& data) : pos_(0)
         {
             *this = data;
         }
@@ -49,7 +48,7 @@ namespace BrinK
         void clear()
         {
             pos_ = 0;
-            buffer_.clear();
+            std::fill(buffer_.begin(), buffer_.end(), '\0');
         }
 
         size_t size() const
@@ -92,30 +91,23 @@ namespace BrinK
             return buffer_;
         }
 
-        void get(const size_t& count, const std::function< void(char*) >& op)
+        void get(const size_t& count, const std::function< void(char*, const size_t&) >& op)
         {
             get(0, count, op);
         }
 
-        void get(const size_t& off, const size_t& count, const std::function< void(char*) >& op)
+        void get(const size_t& off, const size_t& count, const std::function< void(char*, const size_t&) >& op)
         {
             if (off >= size())
                 return;
 
-            char* p = buffer_.data();
+            // fixed bug by shrimps@163.com
 
-            p += off;
+            size_t min_count = size() - off;
 
-            size_t max_count = ((size() - off) < count) ? 0 : count;
+            size_t real_count = (min_count < count) ? min_count : count;
 
-            if (!max_count)
-                op(p);
-            else
-            {
-                std::swap(spliter_, p[max_count]);
-                op(p);
-                std::swap(spliter_, p[max_count]);
-            }
+            op(buffer_.data() + off, real_count);
         }
 
         void operator+=(const std::string& str)
@@ -131,10 +123,9 @@ namespace BrinK
     private:
         std::vector < char >                     buffer_;
         std::atomic_size_t                       pos_;
-        char                                     spliter_;
 
     };
 }
 
-typedef std::shared_ptr < BrinK::buffer >                               char_sptr_t;
-typedef std::function < bool(const char_sptr_t&) >                      pred_t;
+typedef std::shared_ptr < BrinK::buffer >                               buff_sptr_t;
+typedef std::function < bool(const buff_sptr_t&) >                      pred_t;

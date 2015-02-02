@@ -2,10 +2,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <atomic>
-
 #include <brink_defines.h>
-#include <pool/pool.hpp>
 #include <brink_utils.h>
+#include <pool/pool.hpp>
 
 #include "tcp_socket.h"
 
@@ -18,7 +17,7 @@ namespace BrinK
         typedef std::unique_ptr < BrinK::pool::pool< tcp_client_sptr_t > >                pool_uptr_t;
 
         typedef std::function < void(const tcp_client_sptr_t&,
-            const char_sptr_t&,
+            const buff_sptr_t&,
             const boost::system::error_code&,
             const size_t&) >                                                              complete_handler_t;
 
@@ -41,10 +40,10 @@ namespace BrinK
             void broadcast(const std::string& msg);
 
             void async_read(const tcp_client_sptr_t& client,
-                char_sptr_t                          buffer,
+                buff_sptr_t                          buffer,
                 const size_t&                        expect_size,
                 const unsigned __int64&              milliseconds = 0,
-                const pred_t&                        predicate = [](const char_sptr_t&){ return false; });
+                const pred_t&                        predicate = [](const buff_sptr_t&){ return false; });
 
             void async_write(const tcp_client_sptr_t& client,
                  const std::string&                   data);
@@ -63,12 +62,12 @@ namespace BrinK
             void handle_read(const boost::any&      client,
                 const boost::system::error_code&    error,
                 const size_t&                       bytes_transferred,
-                const char_sptr_t&                  buff);
+                const buff_sptr_t&                  buff);
 
             void handle_write(const boost::any&     client,
                 const boost::system::error_code&    error,
                 const size_t&                       bytes_transferred,
-                const char_sptr_t&                  buff);
+                const buff_sptr_t&                  buff);
 
         private:
             void start_();

@@ -8,7 +8,7 @@ acceptor_io_service_(nullptr),
 acceptor_(nullptr),
 acceptor_work_(nullptr),
 acceptor_thread_(nullptr),
-recv_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
+recv_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
     // 接收到数据：这里可以发送数据到客户端或处理各种逻辑，s为接收的数据大小，b为元数据，c是该client，e为错误码
     // 默认先返回数据，在读N个字节，并设置超时（毫秒）
@@ -21,18 +21,18 @@ recv_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boo
 
     async_read(c, b, (b->alloc(10) ? 10 : 0));
 }),
-accept_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
+accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
     // 握手：client初始化，通过c->get_param可以得到他的unique_id，规则："ip地址:端口"
     // 默认读N个字节并设置超时时间（毫秒）
     if (e)
         return;
 
-    char_sptr_t buffer = std::make_shared < BrinK::buffer >(10);
+    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(10);
 
     async_read(c, buffer, buffer->size());
 }),
-send_handler_([this](const tcp_client_sptr_t& c, const char_sptr_t& b, const boost::system::error_code& e, const size_t& s)
+send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
     // 发送完成，b为发送完成的消息
     if (e)
@@ -166,7 +166,7 @@ void BrinK::tcp::server::broadcast(const std::string& msg)
 }
 
 void BrinK::tcp::server::async_read(const tcp_client_sptr_t& client,
-    char_sptr_t                                              buffer,
+    buff_sptr_t                                              buffer,
     const size_t&                                            expect_size,
     const unsigned __int64&                                  millseconds,
     const pred_t&                                            pred)
@@ -244,7 +244,7 @@ boost::asio::io_service& BrinK::tcp::server::get_io_service_()
 void BrinK::tcp::server::handle_read(const boost::any& client,
     const boost::system::error_code&                   error,
     const size_t&                                      bytes_transferred,
-    const char_sptr_t&                                 buff)
+    const buff_sptr_t&                                 buff)
 {
     if (error || !bytes_transferred)
         free_client(boost::any_cast < const tcp_client_sptr_t& >(client));
@@ -255,7 +255,7 @@ void BrinK::tcp::server::handle_read(const boost::any& client,
 void BrinK::tcp::server::handle_write(const boost::any& client,
     const boost::system::error_code&                    error,
     const size_t&                                       bytes_transferred,
-    const char_sptr_t&                                  buff)
+    const buff_sptr_t&                                  buff)
 {
     if (error || !bytes_transferred)
         free_client(boost::any_cast < const tcp_client_sptr_t& >(client));

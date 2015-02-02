@@ -1,12 +1,10 @@
-#ifndef BRINK_POOL_THREAD_H
-#define BRINK_POOL_THREAD_H
+#pragma once
 
 #include <list>
 #include <thread>
 #include <mutex>
 #include <memory>
 #include <condition_variable>
-#include <algorithm>
 #include <atomic>
 
 namespace BrinK
@@ -213,4 +211,3 @@ namespace BrinK
 
     }
 }
-#endif

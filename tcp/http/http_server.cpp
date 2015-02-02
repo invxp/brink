@@ -30,7 +30,7 @@ void BrinK::tcp::http_server::start(const unsigned int& port)
 void BrinK::tcp::http_server::handle_read(const boost::any& client,
     const boost::system::error_code&                        error,
     const size_t&                                           bytes_transferred,
-    const char_sptr_t&                                      buff)
+    const buff_sptr_t&                                      buff)
 {
     __super::handle_read(client, error, bytes_transferred, buff);
 }
@@ -38,13 +38,13 @@ void BrinK::tcp::http_server::handle_read(const boost::any& client,
 void BrinK::tcp::http_server::handle_write(const boost::any& client,
     const boost::system::error_code&                         error,
     const size_t&                                            bytes_transferred,
-    const char_sptr_t&                                       buff)
+    const buff_sptr_t&                                       buff)
 {
     __super::handle_write(client, error, bytes_transferred, buff);
 }
 
 void BrinK::tcp::http_server::read_handler(const tcp_client_sptr_t& c,
-    const char_sptr_t&                                              b,
+    const buff_sptr_t&                                              b,
     const boost::system::error_code&                                e,
     const size_t&                                                   s)
 {
@@ -63,42 +63,48 @@ void BrinK::tcp::http_server::read_handler(const tcp_client_sptr_t& c,
             }
 
             // TODO
-            b->get(get_http_header_length_(b), b->size(), [&p](char* b){ p->cache = b; });
+            b->get(get_http_header_length_(b), b->size(), [&p](char* b, const size_t& sz){ p->cache.assign(b, sz); });
 
         }
         else
         {
-
+            // TODO
         }
-        async_read(c, b, b->size());
+        b->clear();
+        // TODO
     });
 }
 
 void BrinK::tcp::http_server::accept_handler(const tcp_client_sptr_t& c,
-    const char_sptr_t&                                                b,
+    const buff_sptr_t&                                                b,
     const boost::system::error_code&                                  e,
     const size_t&                                                     s)
 {
     if (e)
         return;
 
-    char_sptr_t buffer = std::make_shared < BrinK::buffer >(4096);
+    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(4096);
 
-    async_read(c, buffer, buffer->size(), 5000, [this](const char_sptr_t& buff)
+    async_read(c, buffer, buffer->size(), 5000, [this](const buff_sptr_t& buff)
     {
         return (this->get_http_header_length_(buff) == std::string::npos) ? false : true;
     });
 }
 
-size_t BrinK::tcp::http_server::get_http_header_length_(const char_sptr_t& buff)
+size_t BrinK::tcp::http_server::get_http_header_length_(const buff_sptr_t& buff)
 {
     return BrinK::utils::c_find(buff->data(), "\r\n\r\n");
 }
 
-bool BrinK::tcp::http_server::parse_http_header_(const char_sptr_t& buff, const param_uptr_t& p, std::vector < std::string >& user_agent, std::vector < std::string >& proto)
+bool BrinK::tcp::http_server::parse_http_header_(const buff_sptr_t& buff,
+    const param_uptr_t&                                             p,
+    std::vector < std::string >&                                    user_agent,
+    std::vector < std::string >&                                    proto)
 {
-    buff->get(get_http_header_length_(buff), [&user_agent, &proto](char* ch)
+    buff->get(get_http_header_length_(buff), [&user_agent, &proto](char* p, const size_t& count)
     {
+        std::string ch(p, count);
+
         BrinK::utils::s_split(ch, "\r\n", user_agent);
         if (!user_agent.size())
             return;
@@ -112,7 +118,10 @@ bool BrinK::tcp::http_server::parse_http_header_(const char_sptr_t& buff, const 
     return true;
 }
 
-bool BrinK::tcp::http_server::do_http_request_(const tcp_client_sptr_t& client, const std::string& proto, const std::string& file, const std::vector < std::string>& user_agent)
+bool BrinK::tcp::http_server::do_http_request_(const tcp_client_sptr_t& client,
+    const std::string&                                                  proto,
+    const std::string&                                                  file,
+    const std::vector < std::string>&                                   user_agent)
 {
     // TODO
     if (proto == "GET")
@@ -125,13 +134,11 @@ bool BrinK::tcp::http_server::do_http_request_(const tcp_client_sptr_t& client, 
             return true;
         }
 
-        std::string&& request = build_http_agent_(buf);
-
-        async_write(client, request);
+        async_write(client, build_http_agent_(buf));
     }
     else if (proto == "POST")
     {
-        int b = 0;
+        // TODO
     }
     else
     {

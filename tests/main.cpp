@@ -307,13 +307,22 @@ bool calc_file_date_expired(const std::wstring& file)
 class test
 {
 public:
-    test(){ std::cout << "Create" << std::endl; }
-    ~test(){ std::cout << "Release" << std::endl; }
+    test(){ std::cout << "Create" << std::endl; myfalg =false; }
+    ~test(){ std::cout << "Release" << std::endl; if (myfalg) return; delete this; myfalg = true; }
+
+public:
+    int m;
+    bool myfalg;
 };
 
 
 int main(int argc, char** argv)
 {
+
+    {
+        test aaa;
+        aaa.m = 1;
+    }
     g_exit = false;
     WSADATA data;
     WSAStartup(MAKEWORD(2, 2), &data);

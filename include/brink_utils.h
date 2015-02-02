@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <random>
+
 namespace BrinK
 {
     namespace utils
@@ -93,19 +94,15 @@ namespace BrinK
             if (file_size == std::string::npos)
                 return false;
 
-            char* read_buf = new char[file_size + sizeof(char)];
-
-            memset(read_buf, 0, file_size + sizeof(char));
+            std::unique_ptr <char[]> read_buf = std::make_unique < char[] >(file_size + sizeof(char));
 
             ifs.seekg(0);
 
-            ifs.read(read_buf, file_size);
+            ifs.read(read_buf.get(), file_size);
 
             ifs.close();
 
-            str.assign(read_buf, file_size);
-
-            delete[]read_buf;
+            str.assign(read_buf.get(), file_size);
 
             return true;
         }

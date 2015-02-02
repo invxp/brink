@@ -1,9 +1,7 @@
-#ifndef BRINK_TCP_PROTOBUF_SERVER_H
-#define BRINK_TCP_PROTOBUF_SERVER_H
-
-#include "../tcp_server.h"
+#pragma once
 
 #include "include/pbuf.h"
+#include "../tcp_server.h"
 
 namespace BrinK
 {
@@ -22,21 +20,21 @@ namespace BrinK
             void handle_read(const boost::any&      client,
                 const boost::system::error_code&    error,
                 const size_t&                       bytes_transferred,
-                const char_sptr_t&                  buff);
+                const buff_sptr_t&                  buff);
 
             void handle_write(const boost::any&     client,
                 const boost::system::error_code&    error,
                 const size_t&                       bytes_transferred,
-                const char_sptr_t&                  buff);
+                const buff_sptr_t&                  buff);
 
         private:
             void read_handler(const tcp_client_sptr_t&      c,
-                const char_sptr_t&                          b,
+                const buff_sptr_t&                          b,
                 const boost::system::error_code&            e,
                 const size_t&                               s);
 
             void accept_handler(const tcp_client_sptr_t&    c,
-                const char_sptr_t&                          b,
+                const buff_sptr_t&                          b,
                 const boost::system::error_code&            e,
                 const size_t&                               s);
 
@@ -45,4 +43,3 @@ namespace BrinK
     }
 
 }
-#endif
