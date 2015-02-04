@@ -8,7 +8,7 @@ strand_(std::make_unique < boost::asio::strand >(io)),
 param_(std::make_unique < BrinK::param >()),
 unique_id_(std::make_unique < std::string >())
 {
-    reset_();
+    avalible_ = false;
 }
 
 BrinK::tcp::socket::~socket()
@@ -18,9 +18,12 @@ BrinK::tcp::socket::~socket()
 
 void BrinK::tcp::socket::reset_(const bool& avalible, const std::string& unique_id)
 {
-    std::lock_guard < std::mutex > lock(avalible_mutex_);
-    avalible_ = avalible;
-    unique_id_->assign(unique_id);
+    {
+        std::lock_guard < std::mutex > lock(avalible_mutex_);
+        avalible_ = avalible;
+        unique_id_->assign(unique_id);
+    }
+
     {
         std::lock_guard < std::mutex > lock_param(param_mutex_);
         param_->reset();

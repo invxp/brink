@@ -312,38 +312,17 @@ public:
 
 public:
     int m;
-    bool myfalg;
+    bool myfalg;    
 };
 
 
 int main(int argc, char** argv)
 {
-
-    {
-        test aaa;
-        aaa.m = 1;
-    }
     g_exit = false;
     WSADATA data;
     WSAStartup(MAKEWORD(2, 2), &data);
 
-    //    HANDLE H = CreateFileA("", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    std::string test1 = "C:\\Users\\InvXp\\AppData\\Roaming\\youku\\cache\\_aHR0cHM6Ly9vcGVuYXBpLnlvdWt1LmNvbS92Mi91c2Vycy9wbGF5bG9nL2dldC5qc29uP2NsaWVudF9pZD1lNTdiYzgyYjFhOWRjZDJmJnVzZXJfdHlwZT1ndWlkJnVzZXJfaWQ9MTEwMDAwMDAwMDAwMDAwMDAwMDA1NDc1NEU2MDI4RDI0NDU1NjU3MyZzdGFydF90aW1lPTAmcGFnZT0xJmNvdW50PTEwMA==";
-
-    size_t len = test1.length();
-
-    if (len>=256)
-        test1=test1.substr(0, 259);
-
-    HANDLE H = CreateFileA(test1.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (H == INVALID_HANDLE_VALUE)
-    {
-        DWORD DW = GetLastError();
-        int a=0;
-    }
-    /*
+    
     for (int i = 0; i < 100; i++)
         boost::thread thread(&thread_func_asio_test);
 
@@ -352,7 +331,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < 100; i++)
         boost::thread thread(&thread_func_http_test);
-    */
+    
     thread_func_http_test();
 
     HHOOK hhkLowLevelKybd = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0);
