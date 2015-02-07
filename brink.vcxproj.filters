@@ -75,9 +75,6 @@
     <ClInclude Include="include\brink_handler.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\pool\shared.hpp">
-      <Filter>include\pool</Filter>
-    </ClInclude>
     <ClInclude Include="include\pool\thread.hpp">
       <Filter>include\pool</Filter>
     </ClInclude>

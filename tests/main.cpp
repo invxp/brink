@@ -332,7 +332,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < 100; i++)
         boost::thread thread(&thread_func_http_test);
     
-    thread_func_http_test();
+//     thread_func_http_test();
 
     HHOOK hhkLowLevelKybd = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0);
 

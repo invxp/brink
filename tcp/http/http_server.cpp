@@ -50,7 +50,7 @@ void BrinK::tcp::http_server::read_handler(const tcp_client_sptr_t& c,
 {
     if (e || s == 0)
         return;
-
+    
     c->get_param([this, &c, &b](const param_uptr_t& p)
     {
         if (!p->head_received)
@@ -64,14 +64,13 @@ void BrinK::tcp::http_server::read_handler(const tcp_client_sptr_t& c,
 
             // TODO
             b->get(get_http_header_length_(b), b->size(), [&p](char* b, const size_t& sz){ p->cache.assign(b, sz); });
-
         }
         else
         {
             // TODO
         }
         b->clear();
-        // TODO
+        async_read(c, b, b->size());
     });
 }
 
@@ -85,7 +84,7 @@ void BrinK::tcp::http_server::accept_handler(const tcp_client_sptr_t& c,
 
     buff_sptr_t buffer = std::make_shared < BrinK::buffer >(4096);
 
-    async_read(c, buffer, buffer->size(), 5000, [this](const buff_sptr_t& buff)
+    async_read(c, buffer, buffer->size(), 1000, [this](const buff_sptr_t& buff)
     {
         return (this->get_http_header_length_(buff) == std::string::npos) ? false : true;
     });

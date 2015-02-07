@@ -5,10 +5,9 @@ BrinK::tcp::socket::socket(boost::asio::io_service& io) :
 socket_(std::make_unique < boost::asio::ip::tcp::socket >(io)),
 timer_(std::make_unique < boost::asio::deadline_timer >(io)),
 strand_(std::make_unique < boost::asio::strand >(io)),
-param_(std::make_unique < BrinK::param >()),
-unique_id_(std::make_unique < std::string >())
+param_(std::make_unique < BrinK::param >())
 {
-    avalible_ = false;
+
 }
 
 BrinK::tcp::socket::~socket()
@@ -16,28 +15,16 @@ BrinK::tcp::socket::~socket()
 
 }
 
-void BrinK::tcp::socket::reset_(const bool& avalible, const std::string& unique_id)
-{
-    {
-        std::lock_guard < std::mutex > lock(avalible_mutex_);
-        avalible_ = avalible;
-        unique_id_->assign(unique_id);
-    }
-
-    {
-        std::lock_guard < std::mutex > lock_param(param_mutex_);
-        param_->reset();
-    }
-}
-
 void BrinK::tcp::socket::close_()
 {
-    if (!socket_->is_open())
-        return;
-
     boost::system::error_code ec;
     socket_->shutdown(boost::asio::socket_base::shutdown_both, ec);
     socket_->close(ec);
+}
+
+void BrinK::tcp::socket::cancel_timer_()
+{
+    boost::system::error_code ec;
     timer_->cancel(ec);
 }
 
@@ -49,26 +36,29 @@ boost::asio::ip::tcp::socket& BrinK::tcp::socket::raw_socket()
 void BrinK::tcp::socket::get_param(const std::function < void(const param_uptr_t& p) >& handler)
 {
     std::lock_guard < std::mutex > lock_param(param_mutex_);
+
     handler(param_);
 }
 
 void BrinK::tcp::socket::accept()
 {
-    boost::system::error_code ec;
+    std::lock_guard < std::mutex > lock_param(param_mutex_);
 
-    reset_(true, socket_->remote_endpoint(ec).address().to_string(ec) +
+    boost::system::error_code ec;
+    param_->reset();
+    param_->unique_id = socket_->remote_endpoint(ec).address().to_string(ec) +
         ":" +
-        BrinK::utils::to_string < unsigned short >(socket_->remote_endpoint(ec).port()));
+        BrinK::utils::to_string < unsigned short >(socket_->remote_endpoint(ec).port());
 }
 
 void BrinK::tcp::socket::free()
 {
-    std::lock_guard < std::mutex > lock(avalible_mutex_);
-    if (!avalible_)
+    std::lock_guard < std::mutex > lock(mutex_);
+
+    if (!socket_->is_open())
         return;
 
-    avalible_ = false;
-
+    cancel_timer_();
     close_();
 }
 
@@ -78,9 +68,9 @@ void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
     const unsigned __int64&                                 milliseconds,
     const pred_t&                                           predicate)
 {
-    std::lock_guard < std::mutex > lock(avalible_mutex_);
+    std::lock_guard < std::mutex > lock(mutex_);
 
-    if (!avalible_)
+    if (!socket_->is_open())
         return;
     
     size_t expect_read = (expect_size > buffer->size()) ? buffer->size() : expect_size;
@@ -120,7 +110,7 @@ void BrinK::tcp::socket::handle_read(const boost::system::error_code& error,
 
     if (error || !bytes_transferred || buffer->transferred() >= expect_size || pred(buffer))
     {
-        timer_->expires_at(boost::posix_time::pos_infin);
+        cancel_timer_();
         handler(shared_from_this(), error, (bytes_transferred ? buffer->transferred() : bytes_transferred), buffer);
     }
     else
@@ -140,8 +130,9 @@ void BrinK::tcp::socket::handle_read(const boost::system::error_code& error,
 
 void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, const std::string& data)
 {
-    std::lock_guard < std::mutex > lock(avalible_mutex_);
-    if (!avalible_)
+    std::lock_guard < std::mutex > lock(mutex_);
+
+    if (!socket_->is_open())
         return;
 
     buff_sptr_t buffer = std::make_shared < BrinK::buffer >(data);
@@ -181,11 +172,12 @@ void BrinK::tcp::socket::handle_write(const boost::system::error_code& error,
 
 void BrinK::tcp::socket::handle_timeout(const boost::system::error_code& error, const unsigned __int64& milliseconds)
 {
-    if ((error) || (!avalible_))
+    if ((error) || (!socket_->is_open()))
         return;
 
     if (timer_->expires_at() <= boost::asio::deadline_timer::traits_type::now())
     {
+        cancel_timer_();
         close_();
     }
     else if (milliseconds > 0)
@@ -199,9 +191,4 @@ void BrinK::tcp::socket::handle_timeout(const boost::system::error_code& error, 
             milliseconds
             ));
     }
-}
-
-const std::string& BrinK::tcp::socket::unique_id()
-{
-    return *unique_id_;
 }

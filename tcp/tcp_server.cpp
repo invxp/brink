@@ -12,11 +12,10 @@ recv_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
 {
     // 接收到数据：这里可以发送数据到客户端或处理各种逻辑，s为接收的数据大小，b为元数据，c是该client，e为错误码
     // 默认先返回数据，在读N个字节，并设置超时（毫秒）
-    if (e)
+    if (e || s == 0)
         return;
 
     async_write(c, b->data());
-
     b->clear();
 
     async_read(c, b, (b->alloc(10) ? 10 : 0));
@@ -30,12 +29,12 @@ accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const b
 
     buff_sptr_t buffer = std::make_shared < BrinK::buffer >(10);
 
-    async_read(c, buffer, buffer->size());
+    async_read(c, buffer, buffer->size(), 1000);
 }),
 send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
     // 发送完成，b为发送完成的消息
-    if (e)
+    if (e || s == 0)
         return;
 
     // std::cout << "Sended : " << b->data() << std::endl;
@@ -108,15 +107,16 @@ void BrinK::tcp::server::start_()
 
 void BrinK::tcp::server::stop()
 {
+    {
+        std::lock_guard < std::mutex > lock_accept(accept_clients_mutex_);
+
+        stopped_ = true;
+    }
+
     std::lock_guard < std::mutex > lock_stop(stop_mutex_);
 
     if (!started_)
         return;
-
-    {
-        std::lock_guard < std::mutex > lock_accept(accept_clients_mutex_);
-        stopped_ = true;
-    }
 
     stop_();
 

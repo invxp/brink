@@ -26,6 +26,7 @@ namespace BrinK
             pool(const std::function < T() >& constructor, const unsigned __int64& size = 32) :new_(constructor)
             {
                 std::lock_guard < std::mutex > lock(mutex_);
+
                 for (auto i = 0; i < size; ++i)
                     free_list_.emplace(new_());
             }
@@ -33,6 +34,7 @@ namespace BrinK
             ~pool()
             {
                 std::lock_guard < std::mutex > lock(mutex_);
+
                 busy_list_.clear();
                 free_list_.clear();
             }
@@ -67,12 +69,14 @@ namespace BrinK
             size_t busy_size()
             {
                 std::lock_guard < std::mutex > lock(mutex_);
+
                 return busy_list_.size();
             }
 
             size_t free_size()
             {
                 std::lock_guard < std::mutex > lock(mutex_);
+
                 return free_list_.size();
             }
 
@@ -82,6 +86,13 @@ namespace BrinK
                 std::lock_guard < std::mutex > lock(mutex_);
 
                 std::for_each(busy_list_.begin(), busy_list_.end(), [&op](const T& t){ op(t); });
+            }
+
+            void each_free(const std::function < void(const T& t) >& op = [](const T&){})
+            {
+                std::lock_guard < std::mutex > lock(mutex_);
+
+                std::for_each(free_list_.begin(), free_list_.end(), [&op](const T& t){ op(t); });
             }
 
             void clear(const std::function < void(const T& t) >& op = [](const T&){})

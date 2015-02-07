@@ -19,7 +19,7 @@ namespace BrinK
         typedef std::function < void(const tcp_client_sptr_t&,
             const buff_sptr_t&,
             const boost::system::error_code&,
-            const size_t&) >                                                              complete_handler_t;
+            const size_t&) >                                                                complete_handler_t;
 
         class server :public boost::noncopyable
         {
@@ -46,7 +46,7 @@ namespace BrinK
                 const pred_t&                        predicate = [](const buff_sptr_t&){ return false; });
 
             void async_write(const tcp_client_sptr_t& client,
-                 const std::string&                   data);
+                const std::string&                    data);
 
         public:
             unsigned int get_port() const;
@@ -56,18 +56,18 @@ namespace BrinK
             void free_client(const tcp_client_sptr_t& client);
 
         protected:
-            void handle_accept(const tcp_client_sptr_t& client,
-                const boost::system::error_code&        error);
+            virtual void handle_accept(const tcp_client_sptr_t& client,
+                const boost::system::error_code&                error);
 
-            void handle_read(const boost::any&      client,
-                const boost::system::error_code&    error,
-                const size_t&                       bytes_transferred,
-                const buff_sptr_t&                  buff);
+            virtual void handle_read(const boost::any&      client,
+                const boost::system::error_code&            error,
+                const size_t&                               bytes_transferred,
+                const buff_sptr_t&                          buff);
 
-            void handle_write(const boost::any&     client,
-                const boost::system::error_code&    error,
-                const size_t&                       bytes_transferred,
-                const buff_sptr_t&                  buff);
+            virtual void handle_write(const boost::any&     client,
+                const boost::system::error_code&            error,
+                const size_t&                               bytes_transferred,
+                const buff_sptr_t&                          buff);
 
         private:
             void start_();
@@ -101,7 +101,5 @@ namespace BrinK
 
             unsigned int                                                port_;
         };
-
     }
-
 }

@@ -7,7 +7,6 @@
 #include <brink_param.h>
 
 #include <mutex>
-#include <atomic>
 
 namespace BrinK
 {
@@ -21,7 +20,6 @@ namespace BrinK
 
         public:
             boost::asio::ip::tcp::socket& raw_socket();
-            const std::string&            unique_id();
 
         public:
             void get_param(const std::function < void(const param_uptr_t& p) >& handler); 
@@ -57,19 +55,16 @@ namespace BrinK
                 const unsigned __int64&                          milliseconds);
 
         private:
-            void reset_(const bool& avalible = false, const std::string& unique_id = "");
             void close_();
+            void cancel_timer_();
 
         private:
             tcp_socket_uptr_t                           socket_;
             timer_uptr_t                                timer_;
             strand_uptr_t                               strand_;
             param_uptr_t                                param_;
-            string_uptr_t                               unique_id_;
 
-            std::atomic_bool                            avalible_;
-
-            std::mutex                                  avalible_mutex_;    
+            std::mutex                                  mutex_;
             std::mutex                                  param_mutex_;
         };
 

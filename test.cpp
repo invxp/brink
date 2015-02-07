@@ -34,62 +34,26 @@ void random_test_start_stop()
     }
 }
 
-class test
-{
-public:
-    test():v(998),k(1024),haha("haha"){ std::cout << "Create£º" << this << std::endl; }
-    ~test(){ std::cout << "Release£º" << this << std::endl; }
-
-    void a(){ std::cout << "Value£º" << ++v <<std::endl;}
-
-    int v;
-    int k;
-    std::string haha;
-};
-
-void lazy(std::shared_ptr<test> p)
-{
-    static unsigned int count = 0;
-    if (count > 50)
-        return;
-
-    BrinK::utils::sleep(10);
-
-    std::async(std::bind(&lazy, p));
-
-    ++count;
-
-    p->a();
-}
-
-#include <pool/shared.hpp>
-
 int main(int, char**)
 {
-//     {
-//         BrinK::pool::shared<test> pool(2);
+//     unsigned long test_count = 1000000000;
 // 
-//         pool.get([](std::shared_ptr<test> p)
+//     BrinK::pool::pool< std::string > pool([&test_count]{return BrinK::utils::to_string<unsigned long>(++test_count); }, 55);
+// 
+//     {
+//         for (;;)
 //         {
-//            std::async(std::bind(&lazy,p));
-//         });
+//             std::string s;
+//             pool.get([&s](const std::string& str)
+//             {
+//                 s = str;
+//             });
+//             pool.free(s);
+// 
+//         }
 //     }
-    
-    BrinK::pool::shared<test> pp;
-
-    BrinK::buffer buffer;
-
-    buffer = "12345";
-
-    buffer.get(4, 1, [](char* b, const size_t& count)
-    {
-        std::string buf(b, count);
-
-        std::cout << buf << buf.length() << std::endl;
-    });
-
     unsigned int port=80;
-    http_server.start();
+    http_server.start(port);
 
     std::cout << "Server started port : " << port << std::endl;
 
@@ -142,6 +106,14 @@ int main(int, char**)
                 http_server.broadcast("A test");
             });
 
+        }
+        else if (cmd == "p")
+        {
+            std::async([]
+            {
+                std::cout << "Test Functions" << std::endl;
+
+            });
         }
         else if (cmd == "qt")
         {
