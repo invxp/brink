@@ -15,9 +15,10 @@ recv_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
     if (e || !s)
         return;
 
-    b->clear();
-
-    async_read(c, b, b->size(), 1000);
+    c->get_param([this, &c, &b, &s](const param_uptr_t& p)
+    {
+        async_write(c, b);
+    });
 }),
 accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
@@ -26,14 +27,23 @@ accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const b
     if (e)
         return;
 
-    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(10);
-    async_read(c, buffer, buffer->size(), 1000);
+    c->get_param([this, &c](const param_uptr_t& p)
+    {
+        buff_sptr_t b = std::make_shared < BrinK::buffer >(10);
+        async_read(c, b, b->size(), 1000);
+    });
 }),
 send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
     // 发送完成，b为发送完成的消息
     if (e || !s)
         return;
+
+    c->get_param([this, &c, &b, &s](const param_uptr_t& p)
+    {
+        b->clear();
+        async_read(c, b, b->size(), 1000);
+    });
 }
 )
 {

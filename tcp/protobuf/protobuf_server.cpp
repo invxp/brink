@@ -94,7 +94,6 @@ void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
             async_read(c, b, (b->alloc(PROTOBUF_HEAD_LENGTH) ? PROTOBUF_HEAD_LENGTH : 0));
         }
     });
-
 }
 
 void BrinK::tcp::protobuf_server::write_handler(const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
