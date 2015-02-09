@@ -24,6 +24,12 @@ void BrinK::tcp::protobuf_server::start(const unsigned int& port)
         std::placeholders::_1,
         std::placeholders::_2,
         std::placeholders::_3,
+        std::placeholders::_4),
+        std::bind(&tcp::protobuf_server::write_handler,
+        this,
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3,
         std::placeholders::_4)
         );
 }
@@ -49,6 +55,9 @@ void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
     const boost::system::error_code&                                    e,
     const size_t&                                                       s)
 {
+    if (e || !s)
+        return;
+
     c->get_param([this, &c, &b, &s](const param_uptr_t& p)
     {
         if (!p->head_received)
@@ -86,6 +95,12 @@ void BrinK::tcp::protobuf_server::read_handler(const tcp_client_sptr_t& c,
         }
     });
 
+}
+
+void BrinK::tcp::protobuf_server::write_handler(const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
+{
+    if (e || !s)
+        return;
 }
 
 void BrinK::tcp::protobuf_server::accept_handler(const tcp_client_sptr_t& c,

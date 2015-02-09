@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="tcp\http\http_server.cpp" />
     <ClCompile Include="tcp\protobuf\include\pbuf.cc" />
     <ClCompile Include="tcp\protobuf\protobuf_server.cpp" />
     <ClCompile Include="tcp\tcp_socket.cpp" />
@@ -26,7 +25,6 @@
     <ClInclude Include="include\pool\pool.hpp" />
     <ClInclude Include="include\brink_handler.h" />
     <ClInclude Include="include\pool\thread.hpp" />
-    <ClInclude Include="tcp\http\http_server.h" />
     <ClInclude Include="tcp\protobuf\include\pbuf.h" />
     <ClInclude Include="tcp\protobuf\protobuf_server.h" />
     <ClInclude Include="tcp\tcp_socket.h" />
@@ -94,11 +92,11 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>.\include;.\3rd\protobuf-2.6.0\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>-D_WIN32_WINNT=0x0501 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>.\3rd\protobuf-2.6.0\vsprojects\Release;</AdditionalLibraryDirectories>

@@ -17,6 +17,9 @@ BrinK::tcp::socket::~socket()
 
 void BrinK::tcp::socket::close_()
 {
+    if (!socket_->is_open())
+        return;
+
     boost::system::error_code ec;
     socket_->shutdown(boost::asio::socket_base::shutdown_both, ec);
     socket_->close(ec);
@@ -35,14 +38,14 @@ boost::asio::ip::tcp::socket& BrinK::tcp::socket::raw_socket()
 
 void BrinK::tcp::socket::get_param(const std::function < void(const param_uptr_t& p) >& handler)
 {
-    std::lock_guard < std::mutex > lock_param(param_mutex_);
+    std::lock_guard < std::mutex > lock(param_mutex_);
 
     handler(param_);
 }
 
 void BrinK::tcp::socket::accept()
 {
-    std::lock_guard < std::mutex > lock_param(param_mutex_);
+    std::lock_guard < std::mutex > lock(param_mutex_);
 
     boost::system::error_code ec;
     param_->reset();
@@ -55,11 +58,9 @@ void BrinK::tcp::socket::free()
 {
     std::lock_guard < std::mutex > lock(mutex_);
 
-    if (!socket_->is_open())
-        return;
-
     cancel_timer_();
     close_();
+    param_->reset();
 }
 
 void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
@@ -70,9 +71,6 @@ void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
 {
     std::lock_guard < std::mutex > lock(mutex_);
 
-    if (!socket_->is_open())
-        return;
-    
     size_t expect_read = (expect_size > buffer->size()) ? buffer->size() : expect_size;
 
     socket_->async_read_some(
@@ -130,12 +128,14 @@ void BrinK::tcp::socket::handle_read(const boost::system::error_code& error,
 
 void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, const std::string& data)
 {
-    std::lock_guard < std::mutex > lock(mutex_);
-
-    if (!socket_->is_open())
-        return;
-
     buff_sptr_t buffer = std::make_shared < BrinK::buffer >(data);
+
+    async_write(write_handler, buffer);
+}
+
+void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, buff_sptr_t buffer)
+{
+    std::lock_guard < std::mutex > lock(mutex_);
 
     socket_->async_write_some(
         boost::asio::buffer(buffer->raw(), buffer->size()),
@@ -172,7 +172,7 @@ void BrinK::tcp::socket::handle_write(const boost::system::error_code& error,
 
 void BrinK::tcp::socket::handle_timeout(const boost::system::error_code& error, const unsigned __int64& milliseconds)
 {
-    if ((error) || (!socket_->is_open()))
+    if (error)
         return;
 
     if (timer_->expires_at() <= boost::asio::deadline_timer::traits_type::now())

@@ -33,6 +33,11 @@ namespace BrinK
                 const boost::system::error_code&            e,
                 const size_t&                               s);
 
+            void write_handler(const tcp_client_sptr_t&     c,
+                const buff_sptr_t&                          b,
+                const boost::system::error_code&            e,
+                const size_t&                               s);
+
             void accept_handler(const tcp_client_sptr_t&    c,
                 const buff_sptr_t&                          b,
                 const boost::system::error_code&            e,

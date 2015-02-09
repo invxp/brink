@@ -94,7 +94,7 @@ namespace BrinK
             if (file_size == std::string::npos)
                 return false;
 
-            std::unique_ptr <char[]> read_buf = std::make_unique < char[] >(file_size + sizeof(char));
+            std::unique_ptr < char[] > read_buf = std::make_unique < char[] >(file_size + sizeof(char));
 
             ifs.seekg(0);
 

@@ -6,9 +6,8 @@
 
 #include "./tcp/tcp_server.h"
 #include "./tcp/protobuf/protobuf_server.h"
-#include "./tcp/http/http_server.h"
 
-BrinK::tcp::http_server             http_server;
+BrinK::tcp::server                  server;
 std::atomic_bool                    sig_exit;
 
 #include <pool/shared.hpp>
@@ -19,7 +18,7 @@ void random_test_broadcast()
 
     while (!sig_exit)
     {
-        http_server.broadcast("Broadcast!!!");
+        server.broadcast("Broadcast!!!");
         BrinK::utils::sleep(BrinK::utils::random(100,200));
     }
 }
@@ -28,32 +27,16 @@ void random_test_start_stop()
 {
     while (!sig_exit)
     {
-        http_server.start(80);
+        server.start(80);
         BrinK::utils::sleep(BrinK::utils::random(100, 200));
-        http_server.stop();
+        server.stop();
     }
 }
 
 int main(int, char**)
 {
-//     unsigned long test_count = 1000000000;
-// 
-//     BrinK::pool::pool< std::string > pool([&test_count]{return BrinK::utils::to_string<unsigned long>(++test_count); }, 55);
-// 
-//     {
-//         for (;;)
-//         {
-//             std::string s;
-//             pool.get([&s](const std::string& str)
-//             {
-//                 s = str;
-//             });
-//             pool.free(s);
-// 
-//         }
-//     }
     unsigned int port=80;
-    http_server.start(port);
+    server.start(port);
 
     std::cout << "Server started port : " << port << std::endl;
 
@@ -69,7 +52,7 @@ int main(int, char**)
 
             std::async([]
             {
-                http_server.stop();
+                server.stop();
             });
         }
         else if (cmd == "s")
@@ -78,7 +61,7 @@ int main(int, char**)
 
             std::async([port]
             {
-                http_server.start(port);
+                server.start(port);
             });
 
         }
@@ -103,7 +86,7 @@ int main(int, char**)
 
             std::async([]
             { 
-                http_server.broadcast("A test");
+                server.broadcast("A test");
             });
 
         }
@@ -111,7 +94,6 @@ int main(int, char**)
         {
             std::async([]
             {
-                std::cout << "Test Functions" << std::endl;
 
             });
         }

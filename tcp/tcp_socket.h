@@ -38,6 +38,9 @@ namespace BrinK
             void async_write(const client_handler_t& write_handler,
                 const std::string&                   data);
 
+            void async_write(const client_handler_t& write_handler,
+                buff_sptr_t                          buffer);
+
         private:
             void handle_read(const boost::system::error_code&   error,
                 const size_t&                                   bytes_transferred,

@@ -56,14 +56,14 @@ namespace BrinK
                 return wait_(wait_one_mutex_, wait_one_condition_);
             }
 
-            bool start(const unsigned int& pool_size = std::thread::hardware_concurrency())
+            bool start(const unsigned int& thread_count = std::thread::hardware_concurrency())
             {
                 std::lock_guard < std::mutex > lock(mutex_);
 
                 if (started_)
                     return false;
 
-                create_threads_(pool_size);
+                create_threads_(thread_count);
 
                 started_ = true;
 
@@ -73,14 +73,17 @@ namespace BrinK
             bool stop()
             {
                 std::lock_guard < std::mutex > lock(mutex_);
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
 
-                if (!started_)
-                    return false;
+                {
+                    std::unique_lock < std::mutex > lock_task(tasks_mutex_);
 
-                stop_ = true;
+                    if (!started_)
+                        return false;
 
-                awake_condition(lock_task, tasks_condition_);
+                    stop_ = true;
+
+                    awake_condition(lock_task, tasks_condition_);
+                }
 
                 remove_threads_();
 
