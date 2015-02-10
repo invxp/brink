@@ -107,7 +107,7 @@ void BrinK::tcp::protobuf_server::accept_handler(const tcp_client_sptr_t& c,
     const boost::system::error_code&                                      e,
     const size_t&                                                         s)
 {
-    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(PROTOBUF_HEAD_LENGTH);
+    buff_sptr_t buffer = std::make_shared< BrinK::buffer >(PROTOBUF_HEAD_LENGTH);
 
     async_read(c, buffer, buffer->size());
 }

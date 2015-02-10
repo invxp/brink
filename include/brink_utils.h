@@ -9,7 +9,7 @@ namespace BrinK
 {
     namespace utils
     {
-        template <class T>
+        template< class T >
         inline std::string to_string(const T& v)
         {
             std::stringstream s;
@@ -17,7 +17,7 @@ namespace BrinK
             return s.str();
         }
 
-        template <class T>
+        template< class T >
         inline T from_string(const std::string& s)
         {
             T t;
@@ -94,7 +94,7 @@ namespace BrinK
             if (file_size == std::string::npos)
                 return false;
 
-            std::unique_ptr < char[] > read_buf = std::make_unique < char[] >(file_size + sizeof(char));
+            std::unique_ptr< char[] > read_buf = std::make_unique< char[] >(file_size + sizeof(char));
 
             ifs.seekg(0);
 

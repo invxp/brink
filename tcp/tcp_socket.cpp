@@ -2,10 +2,10 @@
 #include <boost/bind.hpp>
 
 BrinK::tcp::socket::socket(boost::asio::io_service& io) :
-socket_(std::make_unique < boost::asio::ip::tcp::socket >(io)),
-timer_(std::make_unique < boost::asio::deadline_timer >(io)),
-strand_(std::make_unique < boost::asio::strand >(io)),
-param_(std::make_unique < BrinK::param >())
+socket_(std::make_unique< boost::asio::ip::tcp::socket >(io)),
+timer_(std::make_unique< boost::asio::deadline_timer >(io)),
+strand_(std::make_unique< boost::asio::strand >(io)),
+param_(std::make_unique< BrinK::param >())
 {
 
 }
@@ -36,27 +36,27 @@ boost::asio::ip::tcp::socket& BrinK::tcp::socket::raw_socket()
     return *socket_;
 }
 
-void BrinK::tcp::socket::get_param(const std::function < void(const param_uptr_t& p) >& handler)
+void BrinK::tcp::socket::get_param(const std::function< void(const param_uptr_t& p) >& handler)
 {
-    std::lock_guard < std::mutex > lock(param_mutex_);
+    std::lock_guard< std::mutex > lock(param_mutex_);
 
     handler(param_);
 }
 
 void BrinK::tcp::socket::accept()
 {
-    std::lock_guard < std::mutex > lock(param_mutex_);
+    std::lock_guard< std::mutex > lock(param_mutex_);
 
     boost::system::error_code ec;
     param_->reset();
     param_->unique_id = socket_->remote_endpoint(ec).address().to_string(ec) +
         ":" +
-        BrinK::utils::to_string < unsigned short >(socket_->remote_endpoint(ec).port());
+        BrinK::utils::to_string< unsigned short >(socket_->remote_endpoint(ec).port());
 }
 
 void BrinK::tcp::socket::free()
 {
-    std::lock_guard < std::mutex > lock(mutex_);
+    std::lock_guard< std::mutex > lock(mutex_);
 
     cancel_timer_();
     close_();
@@ -69,7 +69,7 @@ void BrinK::tcp::socket::async_read(const client_handler_t& recv_handler,
     const unsigned __int64&                                 milliseconds,
     const pred_t&                                           predicate)
 {
-    std::lock_guard < std::mutex > lock(mutex_);
+    std::lock_guard< std::mutex > lock(mutex_);
 
     size_t expect_read = (expect_size > buffer->size()) ? buffer->size() : expect_size;
 
@@ -128,14 +128,14 @@ void BrinK::tcp::socket::handle_read(const boost::system::error_code& error,
 
 void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, const std::string& data)
 {
-    buff_sptr_t buffer = std::make_shared < BrinK::buffer >(data);
+    buff_sptr_t buffer = std::make_shared< BrinK::buffer >(data);
 
     async_write(write_handler, buffer);
 }
 
 void BrinK::tcp::socket::async_write(const client_handler_t& write_handler, buff_sptr_t buffer)
 {
-    std::lock_guard < std::mutex > lock(mutex_);
+    std::lock_guard< std::mutex > lock(mutex_);
 
     socket_->async_write_some(
         boost::asio::buffer(buffer->raw(), buffer->size()),

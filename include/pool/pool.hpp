@@ -18,14 +18,14 @@ namespace BrinK
 {
     namespace pool
     {
-        template < class T >
+        template< class T >
 
         class pool final
         {
         public:
-            pool(const std::function < T() >& constructor, const unsigned __int64& size = 32) :new_(constructor)
+            pool(const std::function< T() >& constructor, const unsigned __int64& size = 32) :new_(constructor)
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 for (auto i = 0; i < size; ++i)
                     free_list_.emplace(new_());
@@ -33,16 +33,16 @@ namespace BrinK
 
             ~pool()
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 busy_list_.clear();
                 free_list_.clear();
             }
 
         public:
-            void get(const std::function < void(const T& t) >& op = [](const T&){})
+            void get(const std::function< void(const T& t) >& op = [](const T&){})
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
                 
                 if (free_list_.empty()) 
                     op(*busy_list_.emplace(new_()).first);
@@ -54,9 +54,9 @@ namespace BrinK
                 }
             }
 
-            void free(const T& t, const std::function < void(const T& t) >& op = [](const T&){})
+            void free(const T& t, const std::function< void(const T& t) >& op = [](const T&){})
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 auto it = busy_list_.find(t);
                 if (it == busy_list_.end())
@@ -67,9 +67,9 @@ namespace BrinK
                 op(t);
             }
 
-            void each(const std::function < void(const T& t) >& op = [](const T&){})
+            void each(const std::function< void(const T& t) >& op = [](const T&){})
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 std::for_each(busy_list_.begin(), busy_list_.end(), [&op](const T& t){ op(t); });
             }

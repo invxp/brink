@@ -14,13 +14,13 @@ namespace BrinK
 {
     namespace tcp
     {
-        typedef std::shared_ptr < BrinK::tcp::socket >                                    tcp_client_sptr_t;
+        typedef std::shared_ptr< BrinK::tcp::socket >                                    tcp_client_sptr_t;
 
-        typedef std::unique_ptr < BrinK::pool::pool< tcp_client_sptr_t > >                pool_uptr_t;
+        typedef std::unique_ptr< BrinK::pool::pool< tcp_client_sptr_t > >                pool_uptr_t;
 
-        typedef std::unique_ptr < BrinK::pool::thread >                                   thread_pool_uptr_t;
+        typedef std::unique_ptr< BrinK::pool::thread >                                   thread_pool_uptr_t;
 
-        typedef std::function < void(const tcp_client_sptr_t&,
+        typedef std::function< void(const tcp_client_sptr_t&,
             const buff_sptr_t&,
             const boost::system::error_code&,
             const size_t&) >                                                              complete_handler_t;
@@ -91,10 +91,10 @@ namespace BrinK
             pool_uptr_t                                                 clients_pool_;
             thread_pool_uptr_t                                          thread_pool_;
 
-            std::vector < io_service_uptr_t >                           io_services_;
+            std::vector< io_service_uptr_t >                            io_services_;
             std::atomic_size_t                                          io_service_pos_;
-            std::list < work_uptr_t >                                   io_service_works_;
-            std::list < thread_uptr_t >                                 io_service_threads_;
+            std::list< work_uptr_t >                                    io_service_works_;
+            std::list< thread_uptr_t >                                  io_service_threads_;
 
             io_service_uptr_t                                           acceptor_io_service_;
             tcp_acceptor_uptr_t                                         acceptor_;

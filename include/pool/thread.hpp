@@ -11,9 +11,9 @@ namespace BrinK
 {
     namespace pool
     {
-        typedef std::function < void() >                 task_t;
+        typedef std::function< void() >                 task_t;
 
-        typedef std::unique_ptr < std::thread >          thread_uptr_t;
+        typedef std::unique_ptr< std::thread >          thread_uptr_t;
 
         class thread final
         {
@@ -32,7 +32,7 @@ namespace BrinK
         public:
             void post(const task_t& f)
             {
-                std::unique_lock < std::mutex > lock(tasks_mutex_);
+                std::unique_lock< std::mutex > lock(tasks_mutex_);
 
                 tasks_.emplace_back(f);
                 awake_condition(lock, tasks_condition_);
@@ -40,7 +40,7 @@ namespace BrinK
 
             void dispatch(const task_t& f)
             {
-                std::unique_lock < std::mutex > lock(tasks_mutex_);
+                std::unique_lock< std::mutex > lock(tasks_mutex_);
 
                 tasks_.emplace_front(f);
                 awake_condition(lock, tasks_condition_);
@@ -58,7 +58,7 @@ namespace BrinK
 
             bool start(const unsigned int& thread_count = std::thread::hardware_concurrency())
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 if (started_)
                     return false;
@@ -72,10 +72,10 @@ namespace BrinK
 
             bool stop()
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 {
-                    std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+                    std::unique_lock< std::mutex > lock_task(tasks_mutex_);
 
                     if (!started_)
                         return false;
@@ -87,10 +87,10 @@ namespace BrinK
 
                 remove_threads_();
 
-                std::unique_lock < std::mutex > lock_all(wait_all_mutex_);
+                std::unique_lock< std::mutex > lock_all(wait_all_mutex_);
                 awake_condition(lock_all, wait_all_condition_);
 
-                std::unique_lock < std::mutex > lock_one(wait_one_mutex_);
+                std::unique_lock< std::mutex > lock_one(wait_one_mutex_);
                 awake_condition(lock_one, wait_one_condition_);
 
                 stop_ = false;
@@ -102,14 +102,14 @@ namespace BrinK
 
             void clear()
             {
-                std::unique_lock < std::mutex > lock(tasks_mutex_);
+                std::unique_lock< std::mutex > lock(tasks_mutex_);
 
                 tasks_.clear();
             }
 
             size_t size()
             {
-                std::unique_lock < std::mutex > lock(tasks_mutex_);
+                std::unique_lock< std::mutex > lock(tasks_mutex_);
 
                 return tasks_.size();
             }
@@ -126,20 +126,20 @@ namespace BrinK
 
             bool get_task_(task_t& t)
             {
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+                std::unique_lock< std::mutex > lock_task(tasks_mutex_);
 
                 tasks_condition_.wait(lock_task, [this]
                 {
-                    if (this->stop_)
+                    if (stop_)
                         return true;
 
-                    std::unique_lock < std::mutex > lock_all(this->wait_all_mutex_);
-                    std::unique_lock < std::mutex > lock_one(this->wait_one_mutex_);
+                    std::unique_lock< std::mutex > lock_all(wait_all_mutex_);
+                    std::unique_lock< std::mutex > lock_one(wait_one_mutex_);
 
-                    if (this->tasks_.empty())
+                    if (tasks_.empty())
                     {
-                        this->awake_condition(lock_all, this->wait_all_condition_);
-                        this->awake_condition(lock_one, this->wait_one_condition_);
+                        awake_condition(lock_all, wait_all_condition_);
+                        awake_condition(lock_one, wait_one_condition_);
                         return false;
                     }
                     return true;
@@ -158,7 +158,7 @@ namespace BrinK
             void create_threads_(const unsigned int & pool_size)
             {
                 for (unsigned int i = 0; i < pool_size; i++)
-                    threads_.emplace_back(std::make_unique < std::thread >(std::bind(&BrinK::pool::thread::pool_func_, this)));
+                    threads_.emplace_back(std::make_unique< std::thread >(std::bind(&BrinK::pool::thread::pool_func_, this)));
             }
 
             void remove_threads_()
@@ -172,12 +172,12 @@ namespace BrinK
 
             bool stopped_()
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 return stop_ ? true : false;
             }
 
-            void awake_condition(std::unique_lock < std::mutex >& mutex, std::condition_variable& cond)
+            void awake_condition(std::unique_lock< std::mutex >& mutex, std::condition_variable& cond)
             {
                 cond.notify_all();
                 mutex.unlock();
@@ -188,23 +188,23 @@ namespace BrinK
                 if (stopped_())
                     return false;
 
-                std::unique_lock < std::mutex > lock_task(tasks_mutex_);
+                std::unique_lock< std::mutex > lock_task(tasks_mutex_);
 
                 if (tasks_.empty())
                     return false;
 
-                std::unique_lock < std::mutex > lock_wait(mutex);
+                std::unique_lock< std::mutex > lock_wait(mutex);
 
                 lock_task.unlock();
                 cond.wait(lock_wait);
                 return true;
             }
         private:
-            std::list < task_t >                                    tasks_;
+            std::list< task_t >                                     tasks_;
             std::condition_variable                                 tasks_condition_;
             std::mutex                                              tasks_mutex_;
 
-            std::list < thread_uptr_t >                             threads_;
+            std::list< thread_uptr_t >                              threads_;
 
             std::mutex                                              mutex_;
             std::atomic_bool                                        stop_;

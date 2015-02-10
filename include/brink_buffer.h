@@ -86,7 +86,7 @@ namespace BrinK
             return size() - transferred();
         }
 
-        std::vector < char >& raw()
+        std::vector< char >& raw()
         {
             return buffer_;
         }
@@ -121,11 +121,11 @@ namespace BrinK
         }
 
     private:
-        std::vector < char >                     buffer_;
+        std::vector< char >                     buffer_;
         std::atomic_size_t                       pos_;
 
     };
 }
 
-typedef std::shared_ptr < BrinK::buffer >                               buff_sptr_t;
-typedef std::function < bool(const buff_sptr_t&) >                      pred_t;
+typedef std::shared_ptr< BrinK::buffer >                               buff_sptr_t;
+typedef std::function< bool(const buff_sptr_t&) >                      pred_t;

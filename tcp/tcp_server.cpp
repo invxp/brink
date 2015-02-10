@@ -27,11 +27,8 @@ accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const b
     if (e)
         return;
 
-    c->get_param([this, &c](const param_uptr_t& p)
-    {
-        buff_sptr_t b = std::make_shared < BrinK::buffer >(10);
-        async_read(c, b, b->size(), 1000);
-    });
+    buff_sptr_t buff = std::make_shared< BrinK::buffer >(10);
+    async_read(c, buff, buff->size(), 1000);
 }),
 send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
@@ -52,13 +49,12 @@ send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
     started_ = false;
 
     for (size_t i = 0; i < std::thread::hardware_concurrency(); i++)
-        io_services_.emplace_back(std::make_unique < boost::asio::io_service >());
+        io_services_.emplace_back(std::make_unique< boost::asio::io_service >());
 
-    clients_pool_ = std::make_unique< pool::pool < tcp_client_sptr_t > >([this]
+    clients_pool_ = std::make_unique< pool::pool< tcp_client_sptr_t > >([this]
     {
-        return tcp_client_sptr_t(std::make_shared < tcp::socket >(this->get_io_service_()));
-    }
-    );
+        return tcp_client_sptr_t(std::make_shared< tcp::socket >(get_io_service_()));
+    });
 
     thread_pool_ = std::make_unique< pool::thread >();
 
@@ -75,7 +71,7 @@ void BrinK::tcp::server::start(const unsigned int& port,
     const complete_handler_t&                      recv_handler,
     const complete_handler_t&                      send_handler)
 {
-    std::lock_guard < std::mutex > lock(stop_mutex_);
+    std::lock_guard< std::mutex > lock(stop_mutex_);
 
     if (started_)
         return;
@@ -98,18 +94,18 @@ void BrinK::tcp::server::start(const unsigned int& port,
 
 void BrinK::tcp::server::start_()
 {
-    acceptor_io_service_ = std::make_unique < boost::asio::io_service >();
+    acceptor_io_service_ = std::make_unique< boost::asio::io_service >();
 
-    acceptor_work_ = std::make_unique < boost::asio::io_service::work >(*acceptor_io_service_);
+    acceptor_work_ = std::make_unique< boost::asio::io_service::work >(*acceptor_io_service_);
 
-    acceptor_ = std::make_unique < boost::asio::ip::tcp::acceptor >(*acceptor_io_service_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_));
+    acceptor_ = std::make_unique< boost::asio::ip::tcp::acceptor >(*acceptor_io_service_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_));
 
-    acceptor_thread_ = std::make_unique < std::thread >([this]{ boost::system::error_code ec; this->acceptor_io_service_->run(ec); });
+    acceptor_thread_ = std::make_unique< std::thread >([this]{ boost::system::error_code ec; acceptor_io_service_->run(ec); });
 
     std::for_each(io_services_.begin(), io_services_.end(), [this](const io_service_uptr_t& io)
     {
-        io_service_works_.emplace_back(std::make_unique < boost::asio::io_service::work >(*io));
-        io_service_threads_.emplace_back(std::make_unique < std::thread >([&io]{ boost::system::error_code ec; io->run(ec); }));
+        io_service_works_.emplace_back(std::make_unique< boost::asio::io_service::work >(*io));
+        io_service_threads_.emplace_back(std::make_unique< std::thread >([&io]{ boost::system::error_code ec; io->run(ec); }));
     });
 
     accept_clients();
@@ -118,12 +114,12 @@ void BrinK::tcp::server::start_()
 void BrinK::tcp::server::stop()
 {
     {
-        std::lock_guard < std::mutex > lock_accept(accept_clients_mutex_);
+        std::lock_guard< std::mutex > lock_accept(accept_clients_mutex_);
 
         stopped_ = true;
     }
 
-    std::lock_guard < std::mutex > lock_stop(stop_mutex_);
+    std::lock_guard< std::mutex > lock_stop(stop_mutex_);
 
     if (!started_)
         return;
@@ -165,7 +161,7 @@ void BrinK::tcp::server::stop_()
 
 void BrinK::tcp::server::broadcast(const std::string& msg)
 {
-    std::lock_guard < std::mutex > lock(stop_mutex_);
+    std::lock_guard< std::mutex > lock(stop_mutex_);
 
     if ((stopped_) || (!started_))
         return;
@@ -173,8 +169,7 @@ void BrinK::tcp::server::broadcast(const std::string& msg)
     clients_pool_->each([this, &msg](const tcp_client_sptr_t& client)
     {
         async_write(client, msg);
-    }
-    );
+    });
 }
 
 void BrinK::tcp::server::async_read(const tcp_client_sptr_t& client,
@@ -224,14 +219,14 @@ unsigned int BrinK::tcp::server::get_port() const
 
 void BrinK::tcp::server::accept_clients()
 {
-    std::lock_guard < std::mutex > lock(accept_clients_mutex_);
+    std::lock_guard< std::mutex > lock(accept_clients_mutex_);
 
     if (stopped_)
         return;
 
     clients_pool_->get([this](const tcp_client_sptr_t& client)
     {
-        this->acceptor_->async_accept(client->raw_socket(),
+        acceptor_->async_accept(client->raw_socket(),
             boost::bind(&server::handle_accept,
             this,
             client,
@@ -251,7 +246,7 @@ void BrinK::tcp::server::handle_accept(const tcp_client_sptr_t& client, const bo
 
     thread_pool_->post([this, client, error]
     {
-        this->accept_handler_(client, nullptr, error, 1);
+        accept_handler_(client, nullptr, error, 1);
     });
 }
 
@@ -272,14 +267,14 @@ void BrinK::tcp::server::handle_read(const boost::any& client,
     const size_t&                                      bytes_transferred,
     const buff_sptr_t&                                 buff)
 {
-    const tcp_client_sptr_t& c = boost::any_cast < const tcp_client_sptr_t& >(client);
+    const tcp_client_sptr_t& c = boost::any_cast< const tcp_client_sptr_t& >(client);
 
     if (error || !bytes_transferred)
         free_client(c);
 
     thread_pool_->post([this, c, buff, error, bytes_transferred]
     {
-        this->recv_handler_(c, buff, error, bytes_transferred);
+        recv_handler_(c, buff, error, bytes_transferred);
     });
 }
 
@@ -288,14 +283,14 @@ void BrinK::tcp::server::handle_write(const boost::any& client,
     const size_t&                                       bytes_transferred,
     const buff_sptr_t&                                  buff)
 {
-    const tcp_client_sptr_t& c = boost::any_cast <const tcp_client_sptr_t&>(client);
+    const tcp_client_sptr_t& c = boost::any_cast<const tcp_client_sptr_t&>(client);
 
     if (error || !bytes_transferred)
         free_client(c);
 
     thread_pool_->post([this, c, buff, error, bytes_transferred]
     {
-        this->send_handler_(c, buff, error, bytes_transferred);
+        send_handler_(c, buff, error, bytes_transferred);
     });
 }
 

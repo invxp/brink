@@ -12,7 +12,7 @@ namespace BrinK
 {
     namespace tcp
     {
-        class socket final: public std::enable_shared_from_this < BrinK::tcp::socket >
+        class socket final: public std::enable_shared_from_this< BrinK::tcp::socket >
         {
         public:
             socket(boost::asio::io_service& io);
@@ -22,7 +22,7 @@ namespace BrinK
             boost::asio::ip::tcp::socket& raw_socket();
 
         public:
-            void get_param(const std::function < void(const param_uptr_t& p) >& handler); 
+            void get_param(const std::function< void(const param_uptr_t& p) >& handler); 
 
         public:
             void accept();

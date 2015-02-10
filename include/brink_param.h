@@ -38,4 +38,4 @@ namespace BrinK
     };
 }
 
-typedef std::unique_ptr < BrinK::param >                                param_uptr_t;
+typedef std::unique_ptr< BrinK::param >                                param_uptr_t;
