@@ -66,5 +66,8 @@
     <ClInclude Include="include\pool\thread.hpp">
       <Filter>include\pool</Filter>
     </ClInclude>
+    <ClInclude Include="include\pool\shared.hpp">
+      <Filter>include\pool</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

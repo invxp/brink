@@ -9,31 +9,30 @@ pool.get(...);
 
 #include <atomic>
 #include <mutex>
-#include <list>
+#include <set>
 
 namespace BrinK
 {
     namespace pool
     {
-        template < class T, typename... Arg >
+        template< class T, typename... Arg >
 
         class shared final
         {
         public:
             shared(const unsigned __int64& size = 32, Arg&&... args) : deleter_([this](T* ptr)
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 if (destructor_)
                     delete ptr;
                 else
-                    free_list_.emplace(std::shared_ptr< T >(ptr, this->deleter_));
-
+                    free_list_.emplace(std::shared_ptr< T >(ptr, deleter_));
             })
             {
                 destructor_ = false;
 
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 for (auto i = 0; i < size; ++i)
                     make_shared_(std::forward< Arg >(args)...);
@@ -45,29 +44,33 @@ namespace BrinK
             }
 
         public:
-            void get(Arg&&... args, const std::function < void(std::shared_ptr< T >&) >& op)
+            void get(Arg&&... args, const std::function< void(std::shared_ptr< T >&) >& op)
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::shared_ptr< T > p = nullptr;
+
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 if (free_list_.empty())
-                    make_shared_(std::forward< Arg >(args)...);
-
-                op(std::move(free_list_.front()));
-
-                free_list_.pop_front();
+                    p.reset(new T(std::forward< Arg >(args)...), deleter_);
+                else
+                {
+                    p = *std::move(free_list_.begin());
+                    free_list_.erase(free_list_.begin());
+                }
+                op(p);
             }
 
-            void each(const std::function < void(std::shared_ptr< T >& t) >& op = [](T&){})
+            void each(const std::function< void(std::shared_ptr< T >& t) >& op = [](T&){})
             {
-                std::lock_guard < std::mutex > lock(mutex_);
+                std::lock_guard< std::mutex > lock(mutex_);
 
                 std::for_each(free_list_.begin(), free_list_.end(), [&op](std::shared_ptr< T >& t){ op(t); });
             }
 
         private:
-            void make_shared_(Arg && ...args)
+            std::shared_ptr< T > make_shared_(Arg && ...args)
             {
-                free_list_.emplace(new T(std::forward< Arg >(args)...), deleter_);
+                return *free_list_.emplace(new T(std::forward< Arg >(args)...), deleter_).first;
             }
 
         private:
