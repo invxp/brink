@@ -3,9 +3,10 @@
 #include <list>
 #include <thread>
 #include <mutex>
-#include <memory>
 #include <condition_variable>
+#include <memory>
 #include <atomic>
+#include <algorithm>
 
 namespace BrinK
 {
@@ -20,7 +21,7 @@ namespace BrinK
         public:
             thread()
             {
-                stop_ = false;
+                stop_ = true;
                 started_ = false;
             }
             ~thread()
@@ -40,20 +41,12 @@ namespace BrinK
 
             void dispatch(const task_t& f)
             {
-                std::unique_lock< std::mutex > lock(tasks_mutex_);
-
-                tasks_.emplace_front(f);
-                awake_condition(lock, tasks_condition_);
+                f();
             }
 
             bool wait()
             {
-               return wait_(wait_all_mutex_, wait_all_condition_);
-            }
-
-            bool wait_one()
-            {
-                return wait_(wait_one_mutex_, wait_one_condition_);
+               return wait_(wait_mutex_, wait_condition_);
             }
 
             bool start(const unsigned int& thread_count = std::thread::hardware_concurrency())
@@ -63,9 +56,11 @@ namespace BrinK
                 if (started_)
                     return false;
 
-                create_threads_(thread_count);
-
                 started_ = true;
+
+                stop_ = false;
+
+                create_threads_(thread_count);
 
                 return true;
             }
@@ -87,13 +82,8 @@ namespace BrinK
 
                 remove_threads_();
 
-                std::unique_lock< std::mutex > lock_all(wait_all_mutex_);
-                awake_condition(lock_all, wait_all_condition_);
-
-                std::unique_lock< std::mutex > lock_one(wait_one_mutex_);
-                awake_condition(lock_one, wait_one_condition_);
-
-                stop_ = false;
+                std::unique_lock< std::mutex > lock_all(wait_mutex_);
+                awake_condition(lock_all, wait_condition_);
 
                 started_ = false;
 
@@ -113,6 +103,7 @@ namespace BrinK
 
                 return tasks_.size();
             }
+
         private:
             void pool_func_()
             {
@@ -133,13 +124,11 @@ namespace BrinK
                     if (stop_)
                         return true;
 
-                    std::unique_lock< std::mutex > lock_all(wait_all_mutex_);
-                    std::unique_lock< std::mutex > lock_one(wait_one_mutex_);
+                    std::unique_lock< std::mutex > lock_all(wait_mutex_);
 
                     if (tasks_.empty())
                     {
-                        awake_condition(lock_all, wait_all_condition_);
-                        awake_condition(lock_one, wait_one_condition_);
+                        awake_condition(lock_all, wait_condition_);
                         return false;
                     }
                     return true;
@@ -147,8 +136,6 @@ namespace BrinK
 
                 if (stop_)
                     return false;
-
-                wait_one_condition_.notify_all();
 
                 t = std::move(tasks_.front());
                 tasks_.pop_front();
@@ -158,7 +145,7 @@ namespace BrinK
             void create_threads_(const unsigned int & pool_size)
             {
                 for (unsigned int i = 0; i < pool_size; i++)
-                    threads_.emplace_back(std::make_unique< std::thread >(std::bind(&BrinK::pool::thread::pool_func_, this)));
+                    threads_.emplace_back(std::make_unique< std::thread >(std::bind(&thread::pool_func_, this)));
             }
 
             void remove_threads_()
@@ -199,6 +186,7 @@ namespace BrinK
                 cond.wait(lock_wait);
                 return true;
             }
+
         private:
             std::list< task_t >                                     tasks_;
             std::condition_variable                                 tasks_condition_;
@@ -210,11 +198,8 @@ namespace BrinK
             std::atomic_bool                                        stop_;
             std::atomic_bool                                        started_;
 
-            std::mutex                                              wait_all_mutex_;
-            std::condition_variable                                 wait_all_condition_;
-
-            std::mutex                                              wait_one_mutex_;
-            std::condition_variable                                 wait_one_condition_;
+            std::mutex                                              wait_mutex_;
+            std::condition_variable                                 wait_condition_;
         };
 
     }

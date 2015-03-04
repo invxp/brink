@@ -22,6 +22,7 @@
     <ClInclude Include="include\brink_defines.h" />
     <ClInclude Include="include\brink_param.h" />
     <ClInclude Include="include\brink_utils.h" />
+    <ClInclude Include="include\pool\async.hpp" />
     <ClInclude Include="include\pool\pool.hpp" />
     <ClInclude Include="include\brink_handler.h" />
     <ClInclude Include="include\pool\shared.hpp" />

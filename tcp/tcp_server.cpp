@@ -27,8 +27,8 @@ accept_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const b
     if (e)
         return;
 
-    buff_sptr_t buff = std::make_shared< BrinK::buffer >(10);
-    async_read(c, buff, buff->size(), 1000);
+    buff_sptr_t buff = std::make_shared< BrinK::buffer >(1024);
+    async_read(c, buff, buff->size(), 3000);
 }),
 send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boost::system::error_code& e, const size_t& s)
 {
@@ -44,7 +44,7 @@ send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
 }
 )
 {
-    stopped_ = false;
+    stopped_ = true;
 
     started_ = false;
 
@@ -56,7 +56,7 @@ send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
         return tcp_client_sptr_t(std::make_shared< tcp::socket >(get_io_service_()));
     });
 
-    thread_pool_ = std::make_unique< pool::thread >();
+    thread_pool_ = std::make_unique< pool::async >();
 
     thread_pool_->start();
 }
@@ -87,9 +87,11 @@ void BrinK::tcp::server::start(const unsigned int& port,
 
     port_ = port;
 
-    start_();
+    stopped_ = false;
 
     started_ = true;
+
+    start_();
 }
 
 void BrinK::tcp::server::start_()
@@ -125,8 +127,6 @@ void BrinK::tcp::server::stop()
         return;
 
     stop_();
-
-    stopped_ = false;
 
     started_ = false;
 }

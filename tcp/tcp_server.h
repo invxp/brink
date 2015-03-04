@@ -5,6 +5,7 @@
 #include <brink_defines.h>
 #include <brink_utils.h>
 #include <pool/pool.hpp>
+#include <pool/async.hpp>
 #include <pool/thread.hpp>
 #include <iostream>
 
@@ -18,7 +19,7 @@ namespace BrinK
 
         typedef std::unique_ptr< BrinK::pool::pool< tcp_client_sptr_t > >                pool_uptr_t;
 
-        typedef std::unique_ptr< BrinK::pool::thread >                                   thread_pool_uptr_t;
+        typedef std::unique_ptr< BrinK::pool::async >                                    thread_pool_uptr_t;
 
         typedef std::function< void(const tcp_client_sptr_t&,
             const buff_sptr_t&,
@@ -47,7 +48,7 @@ namespace BrinK
                 buff_sptr_t                          buffer,
                 const size_t&                        expect_size,
                 const unsigned __int64&              milliseconds = 0,
-                const pred_t&                        predicate = [](const buff_sptr_t&){ return false; });
+                const pred_t&                        predicate = [](const buff_sptr_t&){ return true; });
 
             void async_write(const tcp_client_sptr_t& client,
                  const std::string&                   data);

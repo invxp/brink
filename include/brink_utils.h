@@ -89,7 +89,7 @@ namespace BrinK
 
             ifs.seekg(0, std::ios::end);
 
-            size_t file_size = ifs.tellg();
+            std::size_t file_size = ifs.tellg();
 
             if (file_size == std::string::npos)
                 return false;
