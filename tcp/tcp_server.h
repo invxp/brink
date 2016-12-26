@@ -5,7 +5,6 @@
 #include <brink_defines.h>
 #include <brink_utils.h>
 #include <pool/pool.hpp>
-#include <pool/async.hpp>
 #include <pool/thread.hpp>
 #include <iostream>
 
@@ -19,7 +18,7 @@ namespace BrinK
 
         typedef std::unique_ptr< BrinK::pool::pool< tcp_client_sptr_t > >                pool_uptr_t;
 
-        typedef std::unique_ptr< BrinK::pool::async >                                    thread_pool_uptr_t;
+        typedef std::unique_ptr< BrinK::pool::thread >                                    thread_pool_uptr_t;
 
         typedef std::function< void(const tcp_client_sptr_t&,
             const buff_sptr_t&,

@@ -56,7 +56,7 @@ send_handler_([this](const tcp_client_sptr_t& c, const buff_sptr_t& b, const boo
         return tcp_client_sptr_t(std::make_shared< tcp::socket >(get_io_service_()));
     });
 
-    thread_pool_ = std::make_unique< pool::async >();
+    thread_pool_ = std::make_unique< pool::thread >();
 
     thread_pool_->start();
 }
